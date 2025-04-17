@@ -2,11 +2,14 @@
 #include "interpreter.h"
 
 Interpreter::Interpreter() {
-    qDebug() << "Interpreter instance created";
+    // qDebug() << "Interpreter instance created";
+    db.loadFromFile("database.json");
 }
 
 Interpreter::~Interpreter() {
-    qDebug() << "Interpreter instance destroyed";
+    // 销毁时自动保存数据
+    db.saveToFile("database.json");
+    // qDebug() << "Interpreter instance destroyed";
 }
 
 QVariant Interpreter::interpret(const QString& sql) {
@@ -81,13 +84,14 @@ QVariant Interpreter::visitSelectStatement(SelectStatementNode* node) {
 
     // 打印结果（实际应用中应返回给调用者）
     qDebug() << "Query results:";
-    for (const auto& record : results) {
-        QStringList fields;
-        for (auto it = record.begin(); it != record.end(); ++it) {
-            fields.append(it.key() + ": " + it.value());
-        }
-        qDebug() << fields.join(", ");
-    }
+    // for (const auto& record : results) {
+    //     QStringList fields;
+    //     for (auto it = record.begin(); it != record.end(); ++it) {
+    //         fields.append(it.key() + ": " + it.value());
+    //     }
+    //     qDebug() << fields.join(", ");
+    // }
+    db.printTable(tableName);
 
     return QVariant::fromValue(results);
 }
@@ -137,6 +141,7 @@ QVariant Interpreter::visitCreateTableStatement(CreateTableStatementNode* node) 
     }
 
     bool success = db.createTable(tableName, columns);
+    if (success) db.saveToFile("database.json"); // 新增
     return QVariant(success);
 }
 
@@ -159,6 +164,7 @@ QVariant Interpreter::visitInsertStatement(InsertStatementNode* node) {
     }
 
     bool success = db.insertRecord(tableName, values);
+    if (success) db.saveToFile("database.json"); // 新增
     return QVariant(success);
 }
 
@@ -186,6 +192,7 @@ QVariant Interpreter::visitUpdateStatement(UpdateStatementNode* node) {
     }
 
     bool success = db.updateRecords(tableName, assignments, whereCondition);
+    if (success) db.saveToFile("database.json"); // 新增
     return QVariant(success);
 }
 
@@ -198,6 +205,7 @@ QVariant Interpreter::visitDeleteStatement(DeleteStatementNode* node) {
     }
 
     bool success = db.deleteRecords(tableName, whereCondition);
+    if (success) db.saveToFile("database.json"); // 新增
     return QVariant(success);
 }
 
@@ -205,5 +213,6 @@ QVariant Interpreter::visitDropTableStatement(DropTableStatementNode* node) {
     QString tableName = visitIdentifier(static_cast<IdentifierNode*>(node->tableName_)).toString();
 
     bool success = db.dropTable(tableName);
+    if (success) db.saveToFile("database.json"); // 新增
     return QVariant(success);
 }

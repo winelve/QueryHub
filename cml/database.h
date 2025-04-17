@@ -7,6 +7,11 @@
 #include <QVector>
 #include <QStringList>
 #include <QDebug>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QTextStream>
 
 class Table {
 public:
@@ -29,6 +34,7 @@ public:
     bool createTable(const QString& tableName, const QVector<Table::Column>& columns);
     bool dropTable(const QString& tableName);
     bool tableExists(const QString& tableName) const;
+    QStringList listTables() const;
 
     // 数据操作
     bool insertRecord(const QString& tableName, const QMap<QString, QString>& values);
@@ -40,6 +46,15 @@ public:
     QVector<QMap<QString, QString>> selectRecords(const QString& tableName,
                                                   const QStringList& columns,
                                                   const QString& whereCondition = QString());
+
+    // 持久化操作
+    bool saveToFile(const QString& filename);
+    bool loadFromFile(const QString& filename);
+
+    // 表格打印
+    void printTable(const QString& tableName) const;
+    void printQueryResult(const QVector<QMap<QString, QString>>& records,
+                          const QStringList& columns) const;
 
 private:
     QMap<QString, Table> tables;

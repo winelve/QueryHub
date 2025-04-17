@@ -21,10 +21,10 @@ void test_parser() {
     // Example MySQL query
     QString sql = "CREATE TABLE users (id INT, name VARCHAR(50));";
     QString test_sql2 = "INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john@example.com');";
-
+    QString sql3 = "CREATE DATABASE a;";
     try {
         Parser parser;
-        ASTNode* ast = parser.parse(test_sql2);
+        ASTNode* ast = parser.parse(sql3);
         qDebug() << "AST for query:" << sql;
         printASTNode(ast,4);
         delete ast;
@@ -86,12 +86,27 @@ void test_interpreter() {
     interpreter.interpret(dropTableSQL);
 }
 
-
 int main() {
 
     // test_tokenizer();
     // test_parser();
-    test_interpreter();
+    // test_interpreter();
+
+    // 第一次运行：创建数据
+    // {
+    //     Interpreter interpreter;
+    //     interpreter.interpret("CREATE TABLE users (id INT, name VARCHAR);");
+    //     interpreter.interpret("INSERT INTO users (id, name) VALUES (1, 'Alice');");
+    //     interpreter.interpret("INSERT INTO users (id, name) VALUES (2, 'Tom');");
+    // } // 此处interpreter析构时自动保存
+
+    // 第二次运行：验证数据持久化
+    {
+        Interpreter interpreter; // 自动加载数据
+        interpreter.interpret("SELECT * FROM users;"); // 应能查询到Alice
+        // interpreter.interpret("DROP TABLE users;"); // 删除表并自动保存
+    }
+
 
     return 0;
 }
