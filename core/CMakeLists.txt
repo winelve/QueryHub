@@ -12,18 +12,21 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 # 查找所有 .cpp 文件
 file(GLOB_RECURSE SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/constraint/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../filesystem/src/*.cpp
     )
 
 # 查找所有 .h 头文件
 file(GLOB_RECURSE HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/constraint/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../filesystem/include/*.h
     )
 
 # 获取所有头文件的目录
 set(CORE_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/constraint
     ${CMAKE_CURRENT_SOURCE_DIR}/../filesystem/include
 )
 
