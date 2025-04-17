@@ -11,17 +11,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 生成可执行文件
 add_executable(queryhub_main ./main.cpp)
-
 add_executable(core_main core/main.cpp)
+add_executable(cml_main cml/main.cpp)
 
 # 添加子模块
 add_subdirectory(core)  # 加载 core 模块
-#add_subdirectory(cml)   # 加载命令行版本
+add_subdirectory(cml)   # 加载命令行版本
 #add_subdirectory(gui)   # 加载 GUI 版本
 
 
 target_link_libraries(queryhub_main PUBLIC core)
 target_link_libraries(core_main PUBLIC core)
+target_link_libraries(cml_main PUBLIC cml)
+
 
 
 # **默认启动 CORE 版本**
