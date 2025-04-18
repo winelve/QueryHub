@@ -8,6 +8,7 @@
 #include <string>
 #include <any>
 #include <vector>
+#include <cmath>
 #include <all_constraints.h>
 #include "constants.h"
 class sqlTool {
