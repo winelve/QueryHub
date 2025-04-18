@@ -134,7 +134,7 @@ int FileManager::WriteTablesFile(const std::string& databaseName,const std::vect
             assert(false);
 
         const std::vector<std::unordered_map<std::string, std::any>>& records = table.GetRecords();
-        out << fieldList.size() << std::endl;
+        out << records.size() << std::endl;
         for(const auto & record : records) {
             out << record.size() << std::endl;
 
@@ -159,7 +159,7 @@ int FileManager::WriteTablesFile(const std::string& databaseName,const std::vect
         if (!out.is_open())
             assert(false);
 
-        out << table.GetConstraints().size() << std::endl;
+        // out << table.GetConstraints().size() << std::endl;
         out << sqlTool::ConstraintsToString(table.GetConstraints())
             << std::endl;
         out.close();

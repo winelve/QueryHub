@@ -77,6 +77,7 @@ int Database::DescribeTable(std::string tableName,std::vector<std::pair<std::str
 }
 
 int Database::ShowTables(std::vector<std::string>& returnTables) {
+    // std::cout << "TABLES_SIZE:" << tables.size() << std::endl;
     for(const auto& table:tables) {
         returnTables.push_back(table.GetTableName());
     }
@@ -91,11 +92,15 @@ int Database::CreateTable(std::string tableName, std::vector<std::pair<std::stri
     }
 
     Table table = Table(tableName, fieldList, constraints);
+
+
     //tables.push_back(table);
     int sum_pri = 0;
+    //遍历约束表
     for(auto constraint : constraints) {
         int ret = 0;//FindField(table_name, constraint->GetFieldName());
         int flag = 0;
+        //找到字段
         for(const auto& x:fieldList) {
             std::string field_name = x.first;
             if(field_name == constraint->GetFieldName()) {
@@ -127,6 +132,7 @@ int Database::CreateTable(std::string tableName, std::vector<std::pair<std::stri
         }
     }
 
+    //检查外键约束
     for(const auto& constraint : constraints) {
         if(dynamic_cast<const ForeignKeyConstraint *>(constraint) == nullptr) continue;
 

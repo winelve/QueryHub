@@ -22,8 +22,9 @@ private:
     std::string tableName;//表名
     std::vector<std::pair<std::string,std::string>> fieldList;//字段列表 <字段名,类型>
     std::unordered_map<std::string,std::string> fieldMap;//字段哈希表
+    std::vector<Constraint*> constraints;//约束
     std::vector<std::unordered_map<std::string, std::any>>  records;//记录
-    std::vector<Constraint*> constraints;
+
 
     int index;//索引
 public:

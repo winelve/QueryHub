@@ -46,6 +46,7 @@ int sqlTool::CompareAny(const std::any& any1, const std::any& any2) {
     if (any1.type() == typeid(float)) {
         float val1 = std::any_cast<float>(any1);
         float val2 = std::any_cast<float>(any2);
+        //比较浮点数
         if(std::fabs(val1 - val2) <= 1e-6) return sEqual;
         if(val1 < val2) return sLess;
         if(val1 > val2) return sLarger;
@@ -71,7 +72,10 @@ std::string sqlTool::ConstraintsToString(const std::vector<Constraint*>& constra
 
     bool DEBUG = false;
 
+    //size
     str += std::to_string(constraints.size()) + "\n";
+
+    //约束
     for(auto &it: constraints) {
         if(DEBUG) std::cout << "===1.1" << std::endl;
 

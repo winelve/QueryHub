@@ -8,54 +8,105 @@ int main() {
     //测试数据
     // 创建数据库
     DataProcessor::GetInstance().CreateDatabase("school");
-
+    DataProcessor::GetInstance().CreateDatabase("xt");
     // 切换数据库
     DataProcessor::GetInstance().UseDatabase("school");
 
+    std::string currUsingDB;
+    DataProcessor::GetInstance().GetCurrentDatabase(currUsingDB);
+    std::cout << "\ncurrUsingDB:\n " << currUsingDB << std::endl;
     // 显示所有数据库
     std::vector<std::string> allDatabases;
     DataProcessor::GetInstance().ShowDatabases(allDatabases);
-    std::cout << "currExist:\n";
+    std::cout << "\nALLDB:\n";
     for (const auto& db : allDatabases) {
         std::cout << "  " << db << std::endl;
     }
+    allDatabases.clear();
 
     // === 表操作 ===
+
+    // 查看 student 表结构
+    std::vector<std::pair<std::string, std::string>> descFields;
+    std::vector<Constraint*> descConstraints;
+    // 查看约束信息
+    std::vector<std::vector<std::any>> ret_constraints;
+
 
     // 创建表 student，字段为 name(string), age(int)，加一个唯一约束
     std::vector<std::pair<std::string, std::string>> fields = {
         {"name", "string"},
         {"age", "int"}
     };
+
     std::vector<Constraint*> constraints;
-    constraints.push_back(new UniqueConstraint("name", "unique_name"));  // 示例约束
+    constraints.push_back(new UniqueConstraint("name", "unique_name"));
     DataProcessor::GetInstance().CreateTable("student", fields, constraints);
 
-    // 展示所有表
-    std::vector<std::string> tables;
-    DataProcessor::GetInstance().ShowTables(tables);
-    std::cout << "\n curr Table:\n";
-    for (const auto& table : tables) {
-        std::cout << "  " << table << std::endl;
-    }
 
-    // 查看 student 表结构
-    std::vector<std::pair<std::string, std::string>> descFields;
-    std::vector<Constraint*> descConstraints;
+    //查看结果
+    // DataProcessor::GetInstance().Write();
+
+    //print
     DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
     std::cout << "\nstudent TAble structure:\n";
     for (const auto& f : descFields) {
         std::cout << "  " << f.first << " : " << f.second << std::endl;
     }
+    descFields.clear();
+
+    DataProcessor::GetInstance().ShowConstraints(ret_constraints);
+    std::cout << "\n NUM OF CURR CONSTRAINT: " << (ret_constraints.size()-1) << std::endl;
+    for(const auto & c : ret_constraints) {
+        for(int i = 0; i < 5; i++) {
+            std::cout << sqlTool::AnyToString(c[i]) << " ";
+        }
+        std::cout << std::endl;
+
+    }
+    ret_constraints.clear();
+
+
+    // 展示所有表
+    std::vector<std::string> tables;
+    DataProcessor::GetInstance().ShowTables(tables);
+    std::cout << " curr Table:" << std::endl;
+    for (const std::string& table : tables) {
+        std::cout << "  " << table << std::endl;
+    }
+
+
 
     // 修改结构：添加一个字段
     DataProcessor::GetInstance().AlterTableAdd("student", {"gender", "string"});
 
+    //print
+    DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
+    std::cout << "student TAble structure:" << std::endl;
+    for (const auto& f : descFields) {
+        std::cout << "  " << f.first << " : " << f.second << std::endl;
+    }
+    descFields.clear();
+
     // 删除字段
     DataProcessor::GetInstance().AlterTableDrop("student", "age");
 
+    DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
+    std::cout << "student TAble structure:" << std::endl;
+    for (const auto& f : descFields) {
+        std::cout << "  " << f.first << " : " << f.second << std::endl;
+    }
+    descFields.clear();
+
     // 修改字段类型
     DataProcessor::GetInstance().AlterTableModify("student", {"gender", "int"});  // 将 gender 改为 int 类型
+
+    DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
+    std::cout << "student TAble structure:" << std::endl;
+    for (const auto& f : descFields) {
+        std::cout << "  " << f.first << " : " << f.second << std::endl;
+    }
+    descFields.clear();
 
     // 添加约束
     Constraint* notnull = new NotNullConstraint("gender", "notnull_gender");
@@ -65,27 +116,57 @@ int main() {
     DataProcessor::GetInstance().AlterTableDeleteConstraint("student", "unique_name");
 
     // 查看约束信息
-    std::vector<std::vector<std::any>> ret_constraints;
     DataProcessor::GetInstance().ShowConstraints(ret_constraints);
-    std::cout << "\n NUM OF CURR CONSTRAINT: " << ret_constraints.size() << std::endl;
+    std::cout << " NUM OF CURR CONSTRAINT: " << (ret_constraints.size()-1) << std::endl;
+    for(const auto & c : ret_constraints) {
+        for(int i = 0; i < 5; i++) {
+            std::cout << sqlTool::AnyToString(c[i]) << " ";
+        }
+        std::cout << std::endl;
+
+    }
+
 
     DataProcessor::GetInstance().ShowTables(tables);
-    std::cout << "\n curr Table:\n";
+    std::cout << "curr Table:" << std::endl;
     for (const auto& table : tables) {
         std::cout << "  " << table << std::endl;
     }
+    tables.clear();
 
     DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
-    std::cout << "\nstudent TAble structure:\n";
+    std::cout << "student TAble structure:\n";
     for (const auto& f : descFields) {
         std::cout << "  " << f.first << " : " << f.second << std::endl;
     }
+    descFields.clear();
+
+
 
     // 删除表
     DataProcessor::GetInstance().DropTable("student");
 
+
+    DataProcessor::GetInstance().Write();
+
+
+    DataProcessor::GetInstance().ShowTables(tables);
+    std::cout << "curr TableSIZE :  " << tables.size() << std::endl;
+
     // 删除数据库
     DataProcessor::GetInstance().DeleteDatabase("school");
+
+
+
+    DataProcessor::GetInstance().ShowDatabases(allDatabases);
+    // std::cout << "\nNumOfDB: " << allDatabases.size() << std::endl;
+    std::cout << "ALLDB:" << std::endl;
+    for (const auto& db : allDatabases) {
+        std::cout << "  " << db << std::endl;
+    }
+
+    allDatabases.clear();
+
     // DataProcessor::GetInstance().CreateDatabase("xt");
     // DataProcessor::GetInstance().CreateDatabase("cat");
     // std::vector<std::string> returnDB;
@@ -93,6 +174,7 @@ int main() {
     // DataProcessor::GetInstance().DeleteDatabase("xt");
     // DataProcessor::GetInstance().ShowDatabases(returnDB);
     // filemanager.WriteDatabasesFile(db);
+//---------B+树--------------
     // bPlusTree bPlusTree;
 
     // bPlusTree.insert({42, "apple", 3.14}, {"Red", 10, 0.99});
