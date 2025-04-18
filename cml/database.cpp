@@ -9,6 +9,72 @@ Database::~Database() {
     // qDebug() << "Database instance destroyed";
 }
 
+
+bool Database::evaluateCondition(const QString& condition, const QMap<QString, QString>& record) {
+    if (condition.isEmpty()) {
+        return true; // No condition means all records match
+    }
+
+    // Parse the condition string that comes from the interpreter
+    // Format is typically "column = value" or "column > value"
+    QStringList parts = condition.split(" ");
+    if (parts.size() >= 3) {
+        QString column = parts[0];
+        QString op = parts[1];
+        QString value = parts[2];
+
+        // Remove any quotes from the value
+        if (value.startsWith("'") && value.endsWith("'")) {
+            value = value.mid(1, value.length() - 2);
+        }
+
+        if (!record.contains(column)) {
+            return false;
+        }
+
+        QString recordValue = record[column];
+
+        if (op == "=") {
+            return recordValue == value;
+        } else if (op == ">") {
+            bool ok1, ok2;
+            double recordNum = recordValue.toDouble(&ok1);
+            double valueNum = value.toDouble(&ok2);
+            return ok1 && ok2 && recordNum > valueNum;
+        } else if (op == "<") {
+            bool ok1, ok2;
+            double recordNum = recordValue.toDouble(&ok1);
+            double valueNum = value.toDouble(&ok2);
+            return ok1 && ok2 && recordNum < valueNum;
+        }
+    }
+
+    return false; // Unrecognized condition format
+}
+
+bool Database::updateRecords(const QString& tableName, const QMap<QString, QString>& values,
+                             const QString& whereCondition) {
+    if (!tableExists(tableName)) {
+        qDebug() << "Cannot update table" << tableName << ": table does not exist";
+        return false;
+    }
+
+    int updatedCount = 0;
+    for (auto& record : tables[tableName].records) {
+        if (evaluateCondition(whereCondition, record)) {
+            // Only update records that match the condition
+            for (auto it = values.begin(); it != values.end(); ++it) {
+                record[it.key()] = it.value();
+            }
+            updatedCount++;
+        }
+    }
+
+    qDebug() << "Updated" << updatedCount << "records in table" << tableName
+             << "where" << whereCondition;
+    return updatedCount > 0;
+}
+
 bool Database::createTable(const QString& tableName, const QVector<Table::Column>& columns) {
     if (tableExists(tableName)) {
         qDebug() << "Table" << tableName << "already exists";
@@ -50,42 +116,28 @@ bool Database::insertRecord(const QString& tableName, const QMap<QString, QStrin
     return true;
 }
 
-bool Database::updateRecords(const QString& tableName, const QMap<QString, QString>& values,
-                             const QString& whereCondition) {
-    if (!tableExists(tableName)) {
-        qDebug() << "Cannot update table" << tableName << ": table does not exist";
-        return false;
-    }
-
-    // 实际应该解析whereCondition并选择性更新
-    // 这里简化实现，更新所有记录
-    int updatedCount = 0;
-    for (auto& record : tables[tableName].records) {
-        for (auto it = values.begin(); it != values.end(); ++it) {
-            record[it.key()] = it.value();
-        }
-        updatedCount++;
-    }
-
-    qDebug() << "Updated" << updatedCount << "records in table" << tableName
-             << "where" << whereCondition;
-    return true;
-}
-
 bool Database::deleteRecords(const QString& tableName, const QString& whereCondition) {
     if (!tableExists(tableName)) {
         qDebug() << "Cannot delete from table" << tableName << ": table does not exist";
         return false;
     }
 
-    // 实际应该解析whereCondition并选择性删除
-    // 这里简化实现，清空所有记录
-    int deletedCount = tables[tableName].records.size();
-    tables[tableName].records.clear();
+    int initialSize = tables[tableName].records.size();
+
+    // Remove records that match the condition
+    QVector<QMap<QString, QString>> remainingRecords;
+    for (const auto& record : tables[tableName].records) {
+        if (!evaluateCondition(whereCondition, record)) {
+            remainingRecords.append(record);
+        }
+    }
+
+    int deletedCount = initialSize - remainingRecords.size();
+    tables[tableName].records = remainingRecords;
 
     qDebug() << "Deleted" << deletedCount << "records from table" << tableName
              << "where" << whereCondition;
-    return true;
+    return deletedCount > 0;
 }
 
 QVector<QMap<QString, QString>> Database::selectRecords(const QString& tableName,
@@ -98,24 +150,25 @@ QVector<QMap<QString, QString>> Database::selectRecords(const QString& tableName
         return results;
     }
 
-    // 实际应该解析whereCondition并选择性返回
-    // 这里简化实现，返回所有记录的指定列
     for (const auto& record : tables[tableName].records) {
-        QMap<QString, QString> resultRecord;
+        // Only include records that match the WHERE condition
+        if (evaluateCondition(whereCondition, record)) {
+            QMap<QString, QString> resultRecord;
 
-        // 如果是SELECT *，返回所有列
-        if (columns.size() == 1 && columns[0] == "*") {
-            resultRecord = record;
-        } else {
-            // 否则只返回指定列
-            for (const auto& column : columns) {
-                if (record.contains(column)) {
-                    resultRecord[column] = record[column];
+            // If SELECT *, return all columns
+            if (columns.size() == 1 && columns[0] == "*") {
+                resultRecord = record;
+            } else {
+                // Otherwise return only specified columns
+                for (const auto& column : columns) {
+                    if (record.contains(column)) {
+                        resultRecord[column] = record[column];
+                    }
                 }
             }
-        }
 
-        results.append(resultRecord);
+            results.append(resultRecord);
+        }
     }
 
     qDebug() << "Selected" << results.size() << "records from table" << tableName

@@ -4,6 +4,11 @@
 #include "interpreter.h"
 #include "utils.h"
 
+void runQuery(Interpreter& interpreter, const QString& sql) {
+    qDebug() << "\n=== Executing: " << sql << " ===";
+    interpreter.interpret(sql);
+}
+
 void test_tokenizer() {
     QString test_sql ="CREATE TABLE users (id INT, name VARCHAR(50));";
     QString test_sql2 = "INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john@example.com');";
@@ -21,7 +26,7 @@ void test_parser() {
     // Example MySQL query
     QString sql = "CREATE TABLE users (id INT, name VARCHAR(50));";
     QString test_sql2 = "INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john@example.com');";
-    QString sql3 = "CREATE DATABASE a;";
+    QString sql3 = "ALTER students ;";
     try {
         Parser parser;
         ASTNode* ast = parser.parse(sql3);
@@ -86,27 +91,57 @@ void test_interpreter() {
     interpreter.interpret(dropTableSQL);
 }
 
+void test_query(){
+    Interpreter interpreter;
+    // Create a new table
+    runQuery(interpreter, "CREATE TABLE students (id INT, name TEXT, grade FLOAT, department TEXT);");
+
+    // Insert data into the table
+    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (1, 'John', 85.5, 'Computer Science');");
+    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (2, 'Emma', 92.0, 'Mathematics');");
+    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (3, 'Michael', 78.3, 'Physics');");
+    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (4, 'Sophia', 95.7, 'Computer Science');");
+
+    // Select all records from the table
+    runQuery(interpreter, "SELECT * FROM students;");
+
+
+}
+
+void test_query2(){
+    Interpreter interpreter;
+    // // Update records with WHERE condition
+    runQuery(interpreter, "UPDATE students SET grade = 88.0;");
+
+    // Verify the update
+    runQuery(interpreter, "SELECT * FROM students;");
+
+
+}
+
+void test_query3() {
+    Interpreter interpreter;
+
+    runQuery(interpreter, "DELETE FROM students WHERE id = 1;");
+    runQuery(interpreter, "SELECT * FROM students;");
+
+}
+void test_query4() {
+    Interpreter interpreter;
+
+    runQuery(interpreter,"DROP TABLE students;");
+    runQuery(interpreter, "SELECT * FROM students;");
+}
+
 int main() {
 
     // test_tokenizer();
     // test_parser();
     // test_interpreter();
-
-    // 第一次运行：创建数据
-    // {
-    //     Interpreter interpreter;
-    //     interpreter.interpret("CREATE TABLE users (id INT, name VARCHAR);");
-    //     interpreter.interpret("INSERT INTO users (id, name) VALUES (1, 'Alice');");
-    //     interpreter.interpret("INSERT INTO users (id, name) VALUES (2, 'Tom');");
-    // } // 此处interpreter析构时自动保存
-
-    // 第二次运行：验证数据持久化
-    {
-        Interpreter interpreter; // 自动加载数据
-        interpreter.interpret("SELECT * FROM users;"); // 应能查询到Alice
-        // interpreter.interpret("DROP TABLE users;"); // 删除表并自动保存
-    }
-
+    // test_query();
+    // test_query2();
+    // test_query3();
+    // test_query4();
 
     return 0;
 }

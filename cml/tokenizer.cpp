@@ -80,6 +80,7 @@ const QList<QPair<QRegularExpression,QString>> Tokenizer::Rules = {
     {QRegularExpression("^\\bin\\b", QRegularExpression::CaseInsensitiveOption), "IN"},
     {QRegularExpression("^\\bbetween\\b", QRegularExpression::CaseInsensitiveOption), "BETWEEN"},
     {QRegularExpression("^\\bvalues\\b", QRegularExpression::CaseInsensitiveOption), "VALUES"},
+    {QRegularExpression("^\\bset\\b", QRegularExpression::CaseInsensitiveOption), "SET"},
 
     // Numbers
     {QRegularExpression("^\\d+\\.\\d+"), "NUMBER"},    // Floating-point numbers

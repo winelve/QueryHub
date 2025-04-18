@@ -10,6 +10,8 @@
 #include <vector>
 #include <all_constraints.h>
 #include "constants.h"
+#include <cmath>
+
 class sqlTool {
 public:
 

@@ -57,6 +57,8 @@ public:
                           const QStringList& columns) const;
 
 private:
+    bool evaluateCondition(const QString& condition, const QMap<QString, QString>& record);
+
     QMap<QString, Table> tables;
 };
 
