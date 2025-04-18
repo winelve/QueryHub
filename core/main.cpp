@@ -4,8 +4,26 @@
 #include "BPlusTree.h"
 #include "dataprocessor.h"
 #include <QDebug>
+
+void readDataFromFile() {
+    DataProcessor::GetInstance().Read(1);
+    // DataProcessor::GetInstance().Read(1);
+    // 显示所有数据库
+    // std::vector<std::string> allDatabases;
+    // DataProcessor::GetInstance().ShowDatabases(allDatabases);
+    // std::cout << "\nALLDB:\n";
+    // for (const auto& db : allDatabases) {
+    //     std::cout << "  " << db << std::endl;
+    // }
+    // allDatabases.clear();
+
+}
+
 int main() {
     //测试数据
+
+    // readDataFromFile();
+//----------DDL----------
     // 创建数据库
     DataProcessor::GetInstance().CreateDatabase("school");
     DataProcessor::GetInstance().CreateDatabase("xt");
@@ -43,11 +61,12 @@ int main() {
     constraints.push_back(new UniqueConstraint("name", "unique_name"));
     DataProcessor::GetInstance().CreateTable("student", fields, constraints);
 
-
     //查看结果
     // DataProcessor::GetInstance().Write();
 
     //print
+
+    //表字段
     DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
     std::cout << "\nstudent TAble structure:\n";
     for (const auto& f : descFields) {
@@ -55,6 +74,7 @@ int main() {
     }
     descFields.clear();
 
+    //约束
     DataProcessor::GetInstance().ShowConstraints(ret_constraints);
     std::cout << "\n NUM OF CURR CONSTRAINT: " << (ret_constraints.size()-1) << std::endl;
     for(const auto & c : ret_constraints) {
@@ -146,7 +166,6 @@ int main() {
     // 删除表
     DataProcessor::GetInstance().DropTable("student");
 
-
     DataProcessor::GetInstance().Write();
 
 
@@ -159,7 +178,7 @@ int main() {
 
 
     DataProcessor::GetInstance().ShowDatabases(allDatabases);
-    // std::cout << "\nNumOfDB: " << allDatabases.size() << std::endl;
+    std::cout << "NumOfDB: " << allDatabases.size() << std::endl;
     std::cout << "ALLDB:" << std::endl;
     for (const auto& db : allDatabases) {
         std::cout << "  " << db << std::endl;

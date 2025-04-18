@@ -289,7 +289,7 @@ int DataProcessor::AlterTableDeleteConstraint(std::string tableName, std::string
     std::string table_name_2 = x.second;
     for(auto& database : databases) {
         if(database.GetDatabaseName() == database_name) {
-            std::cerr << database_name << " ========== " << tableName << ", " << table_name_2 << std::endl;
+            // std::cerr << database_name << " ========== " << tableName << ", " << table_name_2 << std::endl;
             int ret = database.AlterTableDeleteConstraint(tableName, constraintName);
             if(ret != sSuccess) return ret;
             break;

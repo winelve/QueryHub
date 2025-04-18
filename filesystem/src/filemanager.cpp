@@ -186,16 +186,23 @@ int FileManager::ReadDatabasesFile(std::vector<Database>& databases){
     if(!in.is_open())
         assert(false);
 
+    std::cout << "db" << std::endl;
     //清空数据库
     int n;
     in >> n;
+
+    std::cout << n << std::endl;
     for(int i = 1; i <= n; i++) {
 
         std::string databaseName;
         std::string ownerUser;
-        std::cin >> databaseName >> ownerUser;
+        in >> databaseName >> ownerUser;
+
+        std::cout << databaseName << " " << ownerUser << std::endl;
         databases.push_back(Database(databaseName, ownerUser));
     }
+
+    std::cout << "dbOver" << std::endl;
 
     in.close();
 
