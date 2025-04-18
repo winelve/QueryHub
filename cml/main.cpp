@@ -29,7 +29,7 @@ void test_parser() {
     // QString sql3 = "ALTER students ;";
     try {
         Parser parser;
-        ASTNode* ast = parser.parse(test_sql2);
+        ASTNode* ast = parser.parse(sql);
         qDebug() << "AST for query:" << sql;
         printASTNode(ast,4);
         delete ast;
@@ -84,7 +84,7 @@ void test_query4() {
 
 int main() {
 
-    test_tokenizer();
+    // test_tokenizer();
     // test_parser();
     // test_interpreter();
     // test_query();
