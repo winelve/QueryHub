@@ -117,7 +117,7 @@ int DataProcessor::ShowDatabases(std::vector<std::string>& allDatabases) {
     for (const auto& database : databases) {
         std::string currName = database.GetDatabaseName();
         allDatabases.push_back(currName);
-        std::cout << currName << std::endl;
+        // std::cout << currName << std::endl;
     }
 
     return sSuccess;
@@ -135,11 +135,11 @@ int DataProcessor::ShowTables(std::vector<std::string>& return_tables) {
 
     return_tables.clear();
     int ret = currentDatabase->ShowTables(return_tables);
-    if(ret == sSuccess) {
-        for(auto it = return_tables.begin(); it != return_tables.end();) {
-            it++;
-        }
-    }
+    // if(ret == sSuccess) {
+        // for(auto it = return_tables.begin(); it != return_tables.end();) {
+        //     it++;
+        // }
+    // }
     return ret;
 }
 
@@ -264,7 +264,9 @@ int DataProcessor::AlterTableConstraint(std::string tableName, Constraint* const
         return sTableNotFound;
     }
 
+    //若已存在返回sConstraintNameExisted
     if(constraintMap.count(constraint->GetConstraintName())) return sConstraintNameExisted;
+    //反之对该表进行加约束操作
     int ret = currentDatabase->AlterTableConstraint(tableName, constraint);
     UpdateConstraintMap();
     return ret;
@@ -302,23 +304,29 @@ int DataProcessor::ShowConstraints(std::vector<std::vector<std::any>>& retRecord
     }
     UpdateConstraintMap();
     std::vector<std::any> inner_record;
+    //格式如下
     inner_record.push_back(std::any(std::string("Name")));
     inner_record.push_back(std::any(std::string("Type")));
     inner_record.push_back(std::any(std::string("Database")));
     inner_record.push_back(std::any(std::string("Table")));
     inner_record.push_back(std::any(std::string("Field")));
+
     retRecords.push_back(inner_record);
     for(const auto& database : databases) {
+
         const auto & tables = database.GetTables();
         for(const auto& table :tables) {
             const auto& constraints = table.GetConstraints();
-
             for(const auto& constraint : constraints) {
+                //输出对应格式
                 inner_record.clear();
                 if(dynamic_cast<const ForeignReferedConstraint *>(constraint) != nullptr) {
+                    //被外键依赖不算
                     continue;
                 }
+                //约束名
                 inner_record.push_back(std::any(constraint->GetConstraintName()));
+                //约束类型
                 if(dynamic_cast<const ForeignKeyConstraint *>(constraint) != nullptr) {
                     inner_record.push_back(std::any(std::string("FK")));
                 }
@@ -334,9 +342,11 @@ int DataProcessor::ShowConstraints(std::vector<std::vector<std::any>>& retRecord
                 else if(dynamic_cast<const DefaultConstraint *>(constraint) != nullptr) {
                     inner_record.push_back(std::any(std::string("DF")));
                 }
-
+                //数据库名
                 inner_record.push_back(std::any(database.GetDatabaseName()));
+                //表名
                 inner_record.push_back(std::any(table.GetTableName()));
+                //字段名
                 inner_record.push_back(std::any(constraint->GetFieldName()));
                 retRecords.push_back(inner_record);
             }

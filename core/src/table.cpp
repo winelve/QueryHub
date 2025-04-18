@@ -11,6 +11,8 @@ Table::Table(const std::string &tableName,
     this->fieldList = fieldList;
     this->records = records;
     this->constraints = constraints;
+    // std::cout << "CONSTRAINTS: " << constraints.size() << std::endl;
+    // std::cout << "THIS_CONSTRAINTS: " << (this->constraints).size() << std::endl;
     //建立哈希表
     for(auto& field: fieldList) {
         fieldMap[field.first] = field.second;
@@ -24,7 +26,7 @@ Table::~Table() {
 }
 
 //拷贝构造函数
-Table::Table(const Table& t) : tableName(t.tableName), fieldList(t.fieldList), records(t.records){
+Table::Table(const Table& t) : tableName(t.tableName), fieldList(t.fieldList), constraints(t.constraints), records(t.records){
     for(auto& field: fieldList) {
         fieldMap[field.first] = field.second;
     }
@@ -41,6 +43,7 @@ void Table::swap(Table& s1, Table& s2) {
     swap(s1.tableName, s2.tableName);
     swap(s1.fieldList, s2.fieldList);
     swap(s1.fieldMap, s2.fieldMap);
+    swap(s1.constraints, s2.constraints);
     swap(s1.records, s2.records);
 }
 
