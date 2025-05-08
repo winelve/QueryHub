@@ -5,13 +5,13 @@
 
 Parser::Parser() { }
 
-SqlParameters Parser::parse_sql(const QString &_sql){
+QJsonObject Parser::parse_sql(const QString &_sql){
 
     QString sql = _sql.toLower();
     QString first_keyword = parse_first_word_(sql);
     qDebug() << "first_keyword: " << first_keyword;
 
-    SqlParameters ast_root;
+    QJsonObject ast_root;
     ast_root["status"] = "ok";
 
     //如果没解析出来,那么直接返回
@@ -33,7 +33,7 @@ SqlParameters Parser::parse_sql(const QString &_sql){
         //先标记状态
         ast_root["cmd"] = first_keyword;
         //解析参数和操作
-        SqlParameters ast_data = it.value()->parseCMD(sql);
+        QJsonObject ast_data = it.value()->parseCMD(sql);
         //如果内层出现了问题
         if(ast_data["status"] == "error") {
             ast_root["status"] = "error";
@@ -45,7 +45,7 @@ SqlParameters Parser::parse_sql(const QString &_sql){
         ast_root["data"] = ast_data;
     } else {
         ast_root["status"] = "error";
-        ast_root["error_log"] = "Invalid Operation KeyWord:" + first_keyword;
+        ast_root["error_log"] = "Invalid Operation KeyWord: >>" + first_keyword.toUpper() + "<<";
     }
 
     return ast_root;

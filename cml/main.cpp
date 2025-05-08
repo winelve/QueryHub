@@ -2,22 +2,31 @@
 
 
 #include "parser.h"
+#include "utils.h"
 
-#include <QJsonObject>
-#include <QJsonDocument>
 
-void printJs(const QJsonObject &jsonObj) {
-    QJsonDocument doc(jsonObj);
-    QString jsonString = doc.toJson(QJsonDocument::Indented); // 格式化输出
-    qDebug().noquote() << jsonString;
+void test_sql() {
+
+    Parser p;
+    QMap<QString,QList<QString>> test_sqls = p.test_sql_map();
+
+    for(const auto&[op,sql_list]: test_sqls.asKeyValueRange()) {
+        qDebug() << "---------------" << op << "---------------";
+
+        for(auto& sql: sql_list) {
+            qDebug() << sql;
+            QJsonObject ast_root = p.parse_sql(sql);
+            printJs(ast_root);
+            qDebug() << "\n\n";
+        }
+    }
+
 }
+
 
 int main() {
 
-    Parser p;
-    SqlParameters ast_root =  p.parse_sql("Ater table users");;
-
-    printJs(ast_root);
+    test_sql();
 
     return 0;
 }
