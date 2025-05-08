@@ -1,12 +1,13 @@
 #include <QDebug>
 
-
-
+#include "parser.h"
 
 
 int main() {
 
-    qDebug() << "hello cml";
+    Parser p;
+    p.parse_sql("ALter table users;");
+
 
     return 0;
 }
