@@ -16,9 +16,9 @@ public:
 private:
     QString parse_first_word_(const QString &sql);
 
-    Create create_parser;
-    Alter alter_parser;
-    Drop drop_parser;
+    CreateParser create_parser;
+    AlterParser alter_parser;
+    DropParser drop_parser;
 
 };
 

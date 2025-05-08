@@ -5,16 +5,18 @@
 #include <QRegularExpression>
 #include <QStringLiteral>
 
-class BaseCMD {
+#include "sqlparameters.h"
+
+class BaseCmdParser {
 public:
-    virtual ~BaseCMD() = default;  // Virtual destructor for proper polymorphism
-    virtual void parseCMD(const QString &sql) = 0;  // Corrected method name (parser -> parse)
+    virtual ~BaseCmdParser() = default;  // Virtual destructor for proper polymorphism
+    virtual SqlParameters parseCMD(const QString &sql) = 0;  // Corrected method name (parser -> parse)
 };
 
-class Alter:public BaseCMD {
+class AlterParser:public BaseCmdParser {
 public :
-    void parseCMD(const QString &sql) override {
-
+    SqlParameters parseCMD(const QString &sql) override {
+        return SqlParameters();
     };
     QList<QString> test_alter_re = {
         "ALTER DATABASE my_db RENAME new_db;",
@@ -37,15 +39,16 @@ private:
                                                    QRegularExpression::CaseInsensitiveOption};
 };
 //---------------
-class Create:public BaseCMD
+class CreateParser:public BaseCmdParser
 {
 public:
-    void parseCMD(const QString &sql) override {
+    SqlParameters parseCMD(const QString &sql) override {
         QRegularExpressionMatch match;
         if ((match=createDbPattern.match(sql)).hasMatch()){
             // QString db_name = match.captured(1);
 
         }
+        return SqlParameters();
     }
 
     QList<QString> test_create_re = {
@@ -61,10 +64,10 @@ private:
                                            QRegularExpression::CaseInsensitiveOption};
 };
 
-class Drop:public BaseCMD{
+class DropParser:public BaseCmdParser{
 public:
-    void parseCMD(const QString& sql) override{
-
+    SqlParameters parseCMD(const QString& sql) override{
+        return SqlParameters();
     };
 
     QList<QString> test_drop_re = {
