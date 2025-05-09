@@ -1,5 +1,6 @@
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
+#include <QJsonObject>
 
 #include "parser.h"
 

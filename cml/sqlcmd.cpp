@@ -1,5 +1,7 @@
 #include "sqlcmd.h"
 
+#include <QJsonObject>
+#include <QJsonArray>
 
 
 QJsonObject CreateParser::parseCMD(const QString &sql) {
@@ -11,6 +13,7 @@ QJsonObject CreateParser::parseCMD(const QString &sql) {
     if ((match=createDbPattern.match(sql)).hasMatch()){
         QString db_name = match.captured(1);
         ast_data["object"] = "database";
+        ast_data["op"] = "create";
         ast_data["name"] = db_name;
 
     } else if ((match=createTablePattern.match(sql)).hasMatch()) {
@@ -18,6 +21,7 @@ QJsonObject CreateParser::parseCMD(const QString &sql) {
         QString column_str = match.captured(2);
 
         ast_data["object"] = "table";
+        ast_data["op"] = "create";
         ast_data["name"] = table_name;
 
         QJsonArray columns_data;
@@ -45,6 +49,7 @@ QJsonObject CreateParser::parseCMD(const QString &sql) {
             //添加到JsonArray
             columns_data.append(column_js);
         }
+        ast_data["columns"] = columns_data;
     }
     return ast_data;
 }
@@ -59,11 +64,13 @@ QJsonObject DropParser::parseCMD(const QString& sql){
     if((match=dropTablePattern.match(sql)).hasMatch()){
         QString table_name = match.captured(1);
         ast_data["object"] = "table";
+        ast_data["op"] = "drop";
         ast_data["name"] = table_name;
 
     } else if((match=dropDatabasePattern.match(sql)).hasMatch()) {
         QString db_name = match.captured(1);
         ast_data["object"] = "database";
+        ast_data["op"] = "drop";
         ast_data["name"] = db_name;
     } else {
         ast_data["status"] = "error";
@@ -94,9 +101,9 @@ QJsonObject AlterParser::parseCMD(const QString &sql) {
         QString column_type = match.captured(3);
         QString constraints = match.captured(4).trimmed();
 
-        ast_data["object"] = "table";
+        ast_data["object"] = "column";
         ast_data["op"] = "add";
-        ast_data["name"] = table_name;
+        ast_data["table_name"] = table_name;
 
         QJsonArray columns_data;
         QJsonObject column_js;
@@ -113,7 +120,7 @@ QJsonObject AlterParser::parseCMD(const QString &sql) {
         QString column_name = match.captured(2);
         QString new_type = match.captured(3);
 
-        ast_data["object"] = "table";
+        ast_data["object"] = "column";
         ast_data["op"] = "modify";
         ast_data["table_name"] = table_name;
         ast_data["column_name"] = column_name;
@@ -137,7 +144,7 @@ QJsonObject AlterParser::parseCMD(const QString &sql) {
         QString column_name = match.captured(2);
         QString column_type = match.captured(3).trimmed();
 
-        ast_data["object"] = "table";
+        ast_data["object"] = "column";
         ast_data["op"] = "drop";
         ast_data["table_name"] = table_name;
         ast_data["column_name"] = column_name;

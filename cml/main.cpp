@@ -27,6 +27,7 @@ void test_sql() {
 int main() {
 
     test_sql();
+    // test_read_json();
 
     return 0;
 }

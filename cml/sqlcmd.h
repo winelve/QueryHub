@@ -5,7 +5,6 @@
 #include <QRegularExpression>
 #include <QStringLiteral>
 
-#include "sqlparameters.h"
 
 class BaseCmdParser {
 public:
