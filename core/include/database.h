@@ -9,7 +9,7 @@
 
 class Database {
 private:
-    std::string ownerUser;
+    std::string ownerUser;//数据库拥有者可授予或收回权限(但无法与root)
     std::string databaseName;
     std::vector<Table> tables;
 
@@ -26,6 +26,9 @@ public:
     const std::vector<Table>& GetTables() const;
 //SET
     void SetTables(const std::vector<Table>& tables);
+    void SetDatabaseName(const std::string databaseName);
+    void SetTableName(const std::string& tableName, const std::string& newTableName);
+    void SetOwnerUser(const std::string& ownerName);
 //FIND
     int FindField(std::string tableName, std::string fieldName, std::any = nullptr);
     int FindTable(std::string tableName);

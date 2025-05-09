@@ -28,6 +28,23 @@ void Database::SetTables(const std::vector<Table>& tables) {
     this->tables = tables;
 }
 
+void Database::SetDatabaseName(const std::string databaseName) {
+    this->databaseName = databaseName;
+}
+
+void Database::SetTableName(const std::string& tableName, const std::string& newTableName) {
+    for(auto &table: tables) {
+        if(table.GetTableName() == tableName) {
+            table.SetTableName(newTableName);
+            return;
+        }
+    }
+}
+
+void Database::SetOwnerUser(const std::string& ownerName) {
+    this->ownerUser = ownerName;
+}
+
 int Database::FindTable(std::string tableName) {
     for(const auto& table : tables) {
         if(table.GetTableName() == tableName) return sSuccess;

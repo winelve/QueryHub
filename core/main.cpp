@@ -4,8 +4,43 @@
 #include "BPlusTree.h"
 #include "dataprocessor.h"
 #include <QDebug>
-int main() {
-    //测试数据
+
+void readDataFromFile() {
+    DataProcessor::GetInstance().Read(1);
+    // 切换数据库
+    DataProcessor::GetInstance().UseDatabase("school");
+    // 创建表 student，字段为 name(string), age(int)，加一个唯一约束
+    std::vector<std::pair<std::string, std::string>> fields = {
+        {"name", "string"},
+    };
+
+    std::vector<Constraint*> constraints;
+    constraints.push_back(new UniqueConstraint("name", "unique_name"));
+    DataProcessor::GetInstance().CreateTable("hhh", fields, constraints);
+    // 修改字段类型
+    // DataProcessor::GetInstance().AlterTableAdd("xt", {"name", "string"});
+    DataProcessor::GetInstance().AlterTableAdd("hhh", {"age", "int"});
+    DataProcessor::GetInstance().AlterTableAdd("hhh", {"gender", "string"});
+    DataProcessor::GetInstance().AlterTableDrop("hhh", "age");
+    DataProcessor::GetInstance().AlterTableModify("hhh", {"gender", "int"});
+
+
+    //ddd
+    DataProcessor::GetInstance().Write();
+    // DataProcessor::GetInstance().Read(1);
+    // 显示所有数据库
+    // std::vector<std::string> allDatabases;
+    // DataProcessor::GetInstance().ShowDatabases(allDatabases);
+    // std::cout << "\nALLDB:\n";
+    // for (const auto& db : allDatabases) {
+    //     std::cout << "  " << db << std::endl;
+    // }
+    // allDatabases.clear();
+
+}
+
+void writeDataToFile() {
+    //----------DDL----------
     // 创建数据库
     DataProcessor::GetInstance().CreateDatabase("school");
     DataProcessor::GetInstance().CreateDatabase("xt");
@@ -43,11 +78,12 @@ int main() {
     constraints.push_back(new UniqueConstraint("name", "unique_name"));
     DataProcessor::GetInstance().CreateTable("student", fields, constraints);
 
-
     //查看结果
     // DataProcessor::GetInstance().Write();
 
     //print
+
+    //表字段
     DataProcessor::GetInstance().DescribeTable("student", descFields, descConstraints);
     std::cout << "\nstudent TAble structure:\n";
     for (const auto& f : descFields) {
@@ -55,6 +91,7 @@ int main() {
     }
     descFields.clear();
 
+    //约束
     DataProcessor::GetInstance().ShowConstraints(ret_constraints);
     std::cout << "\n NUM OF CURR CONSTRAINT: " << (ret_constraints.size()-1) << std::endl;
     for(const auto & c : ret_constraints) {
@@ -78,6 +115,7 @@ int main() {
 
 
     // 修改结构：添加一个字段
+    DataProcessor::GetInstance().AlterTableAdd("student", {"zvc", "string"});
     DataProcessor::GetInstance().AlterTableAdd("student", {"gender", "string"});
 
     //print
@@ -141,25 +179,24 @@ int main() {
     }
     descFields.clear();
 
-
+    DataProcessor::GetInstance().Write();
 
     // 删除表
     DataProcessor::GetInstance().DropTable("student");
 
 
-    DataProcessor::GetInstance().Write();
 
 
     DataProcessor::GetInstance().ShowTables(tables);
     std::cout << "curr TableSIZE :  " << tables.size() << std::endl;
 
     // 删除数据库
-    DataProcessor::GetInstance().DeleteDatabase("school");
+    // DataProcessor::GetInstance().DeleteDatabase("school");
 
 
 
     DataProcessor::GetInstance().ShowDatabases(allDatabases);
-    // std::cout << "\nNumOfDB: " << allDatabases.size() << std::endl;
+    std::cout << "NumOfDB: " << allDatabases.size() << std::endl;
     std::cout << "ALLDB:" << std::endl;
     for (const auto& db : allDatabases) {
         std::cout << "  " << db << std::endl;
@@ -174,6 +211,52 @@ int main() {
     // DataProcessor::GetInstance().DeleteDatabase("xt");
     // DataProcessor::GetInstance().ShowDatabases(returnDB);
     // filemanager.WriteDatabasesFile(db);
+}
+
+void testUserAuthorityPart() {
+    // DataProcessor::GetInstance().Read(1);
+
+    DataProcessor::GetInstance().CreateUser("xt", "23456");
+    std::cout <<  " 1" << std::endl;
+
+    DataProcessor::GetInstance().CreateUser("root", "123456");
+    std::cout <<  " 2" << std::endl;
+
+    DataProcessor::GetInstance().CreateUser("cat", "55555");
+
+    std::cout <<  " 3" << std::endl;
+    DataProcessor::GetInstance().Login("root", "123456");
+    std::cout <<  " 4" << std::endl;
+    DataProcessor::GetInstance().GrantDatabaseOwner("school","xt");
+    std::cout <<  " 5" << std::endl;
+    DataProcessor::GetInstance().GrantAuthority("cat", "school", "*", "all");
+    std::cout <<  " 6" << std::endl;
+    DataProcessor::GetInstance().RevokeAuthority("cat", "school", "*", "select");
+    std::cout <<  " 7" << std::endl;
+    DataProcessor::GetInstance().RevokeAuthority("cat", "school", "*", "create");
+    std::cout <<  " 8" << std::endl;
+    DataProcessor::GetInstance().RevokeAuthority("cat", "school", "*", "index");
+    std::cout <<  " 9" << std::endl;
+
+    DataProcessor::GetInstance().GrantAuthority("cat", "school", "hhh", "select");
+    std::cout <<  " 10" << std::endl;
+    DataProcessor::GetInstance().RevokeAuthority("cat", "school", "hhh", "drop");
+    std::cout <<  " 11" << std::endl;
+    DataProcessor::GetInstance().GrantAuthority("cat", "school", "hhh", "create");
+    std::cout <<  " 12" << std::endl;
+    DataProcessor::GetInstance().Write();
+    std::cout <<  " 13" << std::endl;
+}
+
+int main() {
+    //测试数据
+
+    // writeDataToFile();
+    readDataFromFile();
+
+    testUserAuthorityPart();
+
+
 //---------B+树--------------
     // bPlusTree bPlusTree;
 

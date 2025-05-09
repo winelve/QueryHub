@@ -5,7 +5,7 @@
 
 #include "constraint.h"
 
-// 非空
+// 唯一
 class UniqueConstraint: public Constraint {
 public:
     UniqueConstraint(const std::string& fieldName, const std::string& constraintName);

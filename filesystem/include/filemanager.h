@@ -9,6 +9,7 @@
 #include "table.h"
 #include "constants.h"
 #include "sqltool.h"
+#include "user.h"
 
 class FileManager {
 private:
@@ -23,7 +24,7 @@ public:
 
     int WriteTablesFile(const std::string& databaseName,const std::vector<Table>& tables);
 
-    int WriteUsersFile();
+    int WriteUsersFile(const std::vector<User>& users);
 
     //Read
 
@@ -32,7 +33,7 @@ public:
     int ReadTablesFile(const std::string& databaseName,
                        std::vector<Table>& tables);
 
-    int ReadUsersFile();
+    int ReadUsersFile(std::vector<User>& users);
 
 };
 
