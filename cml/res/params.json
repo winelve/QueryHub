@@ -1,0 +1,81 @@
+
+{
+    "cmds":[
+        {
+            "cmd": "alter",
+            "op": {
+                "rename": {
+                    "object": {
+                        "database": {
+                            "func":["AlterDatabaseName"],
+                            "keys": ["name", "new_name"]
+                        },
+                        "table": {
+                            "func":["AlterTableName"],
+                            "keys": ["name", "new_name"]
+                        },
+                        "column": {
+                            "func":["AlterColumnName"],
+                            "keys": ["table_name", "column_name", "new_name"]
+                        }
+                    }
+                },
+                "add": {
+                    "object": { 
+                        "column": {
+                            "func": ["AlterTableAdd","AlterTableConstraint"],
+                            "keys": ["table_name", "columns"]
+                        }
+                    }
+                },
+                "modify": {
+                    "object": {
+                        "column": {
+                            "func": ["AlterTableModify"],
+                            "keys": ["table_name", "column_name", "new_type"]
+                        }
+                    }
+                },
+                "drop": {
+                    "object": {
+                        "column": {
+                            "func":["AlterTableDrop"],
+                            "keys": ["table_name", "column_name"]
+                        }
+                    }
+                }
+            }
+            
+        },
+        
+        {
+            "cmd": "create",
+            "object": {
+                "database": {
+                    "func":["CreateDatabase"],
+                    "keys": ["name"]
+                },
+                "table": {
+                    "func":["CreateTable"],
+                    "keys": ["name", "columns"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "drop",
+            "object": {
+                "database": {
+                    "func":["DeleteDatabase"],
+                    "keys": ["name"]
+                    
+                },
+                "table": {
+                    "func":["DropTable"],
+                    "keys": ["name"]
+                }
+            }
+        }
+
+    ]
+}
