@@ -43,7 +43,7 @@ public:
     Table& operator = (Table other);//拷贝赋值函数
 
     void swap(Table& s1, Table& s2);
-
+    //GET
     const std::string& GetTableName() const;
 
     const std::vector<std::pair<std::string,std::string>>& GetFieldList() const;
@@ -51,6 +51,9 @@ public:
     const std::vector<std::unordered_map<std::string, std::any>>&  GetRecords() const;
 
     const std::vector<Constraint*>& GetConstraints() const;
+
+    //SET
+    void SetTableName(const std::string& tableName);
 
     int FindField(std::string fieldName, std::any value) const;//查询字段
 

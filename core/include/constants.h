@@ -12,7 +12,19 @@ const int sDatabaseNotUse = 1;
 const int sDatabaseNotFound = 2;
 const int sCurrentDatabaseError = 3;
 const int sDatabaseExisted = 4;
+const int sCurrentUserError = 5;
+const int sValueEmpty = 6;
+const int sValueIllegal = 7;
+
+//USER
 const int sUserNotLogin = 10;
+const int sIdentifiedFail =  11;
+const int sInsufficientAuthority = 12;
+const int sAuthorityExisted = 13;
+const int sAuthorityNotFound = 14;
+const int sUserNameExisted = 15;
+const int sUserNameNotFound = 16;
+const int sUserPasswordError = 17;
 
 //CONST
 const int sEqual =  30;

@@ -65,7 +65,10 @@ const std::vector<Constraint*>& Table::GetConstraints() const {
     return constraints;
 }
 
-
+//SET
+void Table::SetTableName(const std::string& tableName) {
+    this->tableName = tableName;
+}
 
 int Table::FindField(std::string fieldName, std::any value) const {
     if(!fieldMap.count(fieldName)) return sFieldNotFound;

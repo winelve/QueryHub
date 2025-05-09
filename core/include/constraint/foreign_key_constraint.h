@@ -6,7 +6,7 @@
 
 #include "constraint.h"
 
-// 主键：非空 且 唯一
+// 外键约束: 表名,字段名,依赖表名, 依赖字段名
 class ForeignKeyConstraint: public Constraint {
 
 public:
