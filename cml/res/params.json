@@ -1,0 +1,69 @@
+{
+    "cmds":[
+        {
+            "cmd": "alter",
+            "rename": {
+                "database": {
+                    "func":["AlterDatabaseName"],
+                    "keys": ["name", "new_name"]
+                },
+                "table": {
+                    "func":["AlterTableName"],
+                    "keys": ["name", "new_name"]
+                },
+                "column": {
+                    "func":["AlterColumnName"],
+                    "keys": ["table_name", "column_name", "new_name"]
+                }
+            },
+            "add": {
+                "column": {
+                    "func": ["AlterTableAdd","AlterTableConstraint"],
+                    "keys": ["table_name", "columns"]
+                }
+            },
+            "modify": {
+                "column": {
+                    "func": ["AlterTableModify"],
+                    "keys": ["table_name", "column_name", "new_type"]
+                }
+            },
+            "drop": {
+                "column": {
+                    "func":["AlterTableDrop"],
+                    "keys": ["table_name", "column_name"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "create",
+            "create": {
+                "database": {
+                    "func":["CreateDatabase"],
+                    "keys": ["name"]
+                },
+                "table": {
+                    "func":["CreateTable"],
+                    "keys": ["name", "columns"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "drop",
+            "drop": {
+                "database": {
+                    "func":["DeleteDatabase"],
+                    "keys": ["name"]
+                    
+                },
+                "table": {
+                    "func":["DropTable"],
+                    "keys": ["name"]
+                }
+            }
+        }
+
+    ]
+}
