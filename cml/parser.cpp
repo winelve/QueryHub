@@ -26,6 +26,7 @@ QJsonObject Parser::parse_sql(const QString &_sql){
         {"create",&create_parser},
         {"alter",&alter_parser},
         {"drop",&drop_parser},
+        {"use",&other_parser}
     };
 
     auto it = cmd_parsers.find(first_keyword);

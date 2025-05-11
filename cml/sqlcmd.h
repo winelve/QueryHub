@@ -17,7 +17,7 @@ public :
     QJsonObject parseCMD(const QString &sql) override;
     QList<QString> test_alter_re = {
         "ALTER DATABASE my_db RENAME TO new_db;",
-        "ALTER TABLE users ADD age INT NOT NULL;",
+        "ALTER TABLE users ADD age INT NOT_NULL;",
         "ALTER TABLE users MODIFY name VARCHAR;",
         "ALTER TABLE users RENAME COLUMN name TO full_name;",
         "ALTER TABLE users DROP email CHAR;",
@@ -26,23 +26,40 @@ public :
     };
 private:
     const QRegularExpression alterDbRenamePattern{
-                                                  QStringLiteral("^ALTER\\s+DATABASE\\s+(\\w+)\\s+RENAME\\s+TO\\s+(\\w+)\\s*;"),
-                                                  QRegularExpression::CaseInsensitiveOption};
+        QStringLiteral("^ALTER\\s+DATABASE\\s+(\\w+)\\s+RENAME\\s+TO\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
     const QRegularExpression alterTableAddPattern{
-                                                  QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+ADD\\s+(\\w+)\\s+(\\w+)\\s*([^\\s;][^;]*?)?\\s*;"),
-                                                  QRegularExpression::CaseInsensitiveOption};
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+ADD\\s+(\\w+)\\s+(\\w+)\\s*((?:\\s+\\w+(?:\\([^)]*\\))?)*?)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
     const QRegularExpression alterTableModifyPattern{
-                                                     QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+MODIFY\\s+(\\w+)\\s+(\\w+)\\s*;"),
-                                                     QRegularExpression::CaseInsensitiveOption};
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+MODIFY\\s+(\\w+)\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
     const QRegularExpression alterTableRenameColumnPattern{
-                                                           QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+RENAME\\s+COLUMN\\s+(\\w+)\\s+TO\\s+(\\w+)\\s*;"),
-                                                           QRegularExpression::CaseInsensitiveOption};
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+RENAME\\s+COLUMN\\s+(\\w+)\\s+TO\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
     const QRegularExpression alterTableDropPattern{
-                                                   QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+DROP\\s+(\\w+)\\s*(\\w+)?\\s*;"),
-                                                   QRegularExpression::CaseInsensitiveOption};
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+DROP\\s+(\\w+)\\s*(\\w+)?\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
     const QRegularExpression alterTableRenamePattern{
-                                                     QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+RENAME\\s+TO\\s+(\\w+)\\s*;"),
-                                                     QRegularExpression::CaseInsensitiveOption};
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+RENAME\\s+TO\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression constraintPattern{
+        QStringLiteral("\\b(\\w+)(?:\\(([^)]+)\\))?"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
 };
 //---------------
 class CreateParser:public BaseCmdParser
@@ -51,15 +68,30 @@ public:
     QJsonObject parseCMD(const QString &sql) override;
     QList<QString> test_create_re = {
         "CREATE DATABASE my_db;",
-        "CREATE TABLE users (id INT PRIMARY KEY AUTO_INCREMENT,name VARCHAR NOT NULL DEFAULT 'unknown',email CHAR);"
+        "CREATE TABLE users (id INT PRIMARY_KEY AUTO_INCREMENT,name VARCHAR NOT_NULL DEFAULT(unknown),email CHAR);"
     };
 private:
-    const QRegularExpression createDbPattern{QStringLiteral("^CREATE\\s+DATABASE\\s+(\\w+)\\s*;"),
-                                             QRegularExpression::CaseInsensitiveOption};
-    const QRegularExpression createTablePattern{QStringLiteral("^CREATE\\s+TABLE\\s+(\\w+)\\s*\\(\\s*([\\s\\S]*?)\\s*\\)\\s*;"),
-                                                QRegularExpression::CaseInsensitiveOption};
-    const QRegularExpression columnPattern{QStringLiteral("^(\\w+)\\s+(\\w+)\\s*([^\\s,][^,]*?)?(?=\\s*,|\\s*$)"),
-                                           QRegularExpression::CaseInsensitiveOption};
+    const QRegularExpression createDbPattern{
+        QStringLiteral("^CREATE\\s+DATABASE\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression createTablePattern{
+        QStringLiteral("^CREATE\\s+TABLE\\s+(\\w+)\\s*\\(\\s*([\\s\\S]*?)\\s*\\)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression columnPattern{
+        QStringLiteral("^(\\w+)\\s+(\\w+)\\s*((?:\\s+\\w+(?:\\([^)]*\\))?)*?)(?=\\s*,|\\s*$)"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    // 可以添加一个新的正则表达式来匹配单个约束
+    const QRegularExpression constraintPattern{
+        QStringLiteral("\\b(\\w+)(?:\\(([^)]+)\\))?"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
 };
 
 class DropParser:public BaseCmdParser{
@@ -71,10 +103,53 @@ public:
         "DROP DATABASE my_db;"
     };
 private:
-    const QRegularExpression dropTablePattern{ QStringLiteral("^DROP\\s+TABLE\\s+(\\w+)\\s*;"),
-                                              QRegularExpression::CaseInsensitiveOption};
-    const QRegularExpression dropDatabasePattern{ QStringLiteral("^DROP\\s+DATABASE\\s+(\\w+)\\s*;"),
-                                                 QRegularExpression::CaseInsensitiveOption};
+    const QRegularExpression dropTablePattern{
+        QStringLiteral("^DROP\\s+TABLE\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression dropDatabasePattern{
+        QStringLiteral("^DROP\\s+DATABASE\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
 };
+
+
+class OtherCmdParser : public BaseCmdParser
+{
+public:
+    QJsonObject parseCMD(const QString &sql) override;
+
+    QList<QString> test_other_re = {
+        "USE my_db;",
+        "SHOW DATABASES;",
+        "SHOW TABLES;",
+        "DESCRIBE users;"
+    };
+
+private:
+    const QRegularExpression useDbPattern{
+        QStringLiteral("^USE\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression showDatabasesPattern{
+        QStringLiteral("^SHOW\\s+DATABASES\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression showTablesPattern{
+        QStringLiteral("^SHOW\\s+TABLES\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression describeTablePattern{
+        QStringLiteral("^DESCRIBE\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+};
+
+
 
 #endif // SQLCMD_H
