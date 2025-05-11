@@ -7,6 +7,7 @@
 
 void readDataFromFile() {
     DataProcessor::GetInstance().Read(1);
+    DataProcessor::GetInstance().Login("root", "123456");
     // 切换数据库
     DataProcessor::GetInstance().UseDatabase("school");
     // 创建表 student，字段为 name(string), age(int)，加一个唯一约束
@@ -26,7 +27,7 @@ void readDataFromFile() {
 
 
     //ddd
-    DataProcessor::GetInstance().Write();
+    // DataProcessor::GetInstance().Write();
     // DataProcessor::GetInstance().Read(1);
     // 显示所有数据库
     // std::vector<std::string> allDatabases;
@@ -40,6 +41,8 @@ void readDataFromFile() {
 }
 
 void writeDataToFile() {
+    DataProcessor::GetInstance().Read(1);
+    DataProcessor::GetInstance().Login("root", "123456");
     //----------DDL----------
     // 创建数据库
     DataProcessor::GetInstance().CreateDatabase("school");
@@ -225,7 +228,7 @@ void testUserAuthorityPart() {
     DataProcessor::GetInstance().CreateUser("cat", "55555");
 
     std::cout <<  " 3" << std::endl;
-    DataProcessor::GetInstance().Login("root", "123456");
+    // DataProcessor::GetInstance().Login("root", "123456");
     std::cout <<  " 4" << std::endl;
     DataProcessor::GetInstance().GrantDatabaseOwner("school","xt");
     std::cout <<  " 5" << std::endl;

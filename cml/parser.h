@@ -29,6 +29,7 @@ private:
     CreateParser create_parser;
     AlterParser alter_parser;
     DropParser drop_parser;
+    OtherCmdParser other_parser;
 
 };
 

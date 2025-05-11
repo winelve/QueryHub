@@ -26,17 +26,27 @@
     "data":{
         "object":"table",
         "name":"name",
-        "columns":[
+        "columns": [
             {
-                "cname":"name",
+               	"cname":"name",
                 "ctype":"type",
-                "constrain":"constrain",
-            },
-            {
-				"cname":"name",
+                "constrains": [
+                    {
+                        "csname":"csname",
+                        "params":[]
+                    },
+                ]
+           },
+           {
+               "cname":"name",
                 "ctype":"type",
-                "constrain":"constrain",
-            }
+                "constrains": [
+                    {
+                        "csname":"csname",
+                        "params":[]
+                    },
+                ]
+           }
         ]
     }
 }
@@ -99,15 +109,25 @@ add-column
     "op":"add",
     "table_name": "name",
     "columns": [
-       {
-            "cname":"name",
+        {
+           "cname":"name",
 	        "ctype":"type",
-    	    "constrain","constrain"
+    	    "constrains": [
+                {
+            		"csname":"csname",
+               		"params":[]
+           		},
+            ]
        },
 	   {
-            "cname":"name",
+           "cname":"name",
 	        "ctype":"type",
-    	    "constrain","constrain"
+    	    "constrains": [
+                {
+            		"csname":"csname",
+               		"params":[]
+           		},
+            ]
        }
     ]
     }
@@ -152,6 +172,23 @@ drop-column
     }
     
 }
+
+//对于foregin key的约束
+foregin_key(reference_tb,reference_column)
+
+//other cmds
+{
+    "cmd":"use",
+    "data": {
+        "op":"use",
+        "object":"database",
+        "db_name": "name"
+    }
+    
+}
+
+
+
 
 
 ```
@@ -238,7 +275,17 @@ drop-column
                     "keys": ["name"]
                 }
             }
+        },
+        {
+            "cmd":"use",
+            "object": {
+                "database": {
+                    "func": ["UseDatabase"],
+                    "keys": ["db_name"]
+                }
+            }
         }
+        
 
     ]
 }

@@ -63,6 +63,17 @@
                     "keys": ["name"]
                 }
             }
+        },
+
+        {
+            "cmd":"use",
+            "use": {
+                    "database": {
+                    "func": ["UseDatabase"],
+                    "keys": ["db_name"]
+                }
+            }
+
         }
 
     ]
