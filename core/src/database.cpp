@@ -74,9 +74,9 @@ int Database::FindField(std::string tableName, std::string fieldName, std::any v
 }
 
 //依表名找到依赖的表
-Table& Database::FindTableReference(std::string table_name) {
+Table& Database::FindTableReference(std::string tableName) {
     for(auto& table : tables) {
-        if(table.GetTableName() == table_name) return table;
+        if(table.GetTableName() == tableName) return table;
     }
     assert(1);
     //impossible situation
@@ -194,28 +194,29 @@ int Database::DropTable(std::string tableName) {
     return sTableNotFound;
 }
 
-int Database::AlterTableAdd(std::string table_name, std::pair<std::string, std::string> field) {
+int Database::AlterTableAdd(std::string tableName, std::pair<std::string, std::string> field) {
     for(auto& table:tables) {
-        if(table.GetTableName() == table_name) {
+        if(table.GetTableName() == tableName) {
             return table.AlterTableAdd(field);
         }
     }
     return sTableNotFound;
 }
 
-int Database::AlterTableDrop(std::string table_name, std::string field_name) {
+int Database::AlterTableDrop(std::string tableName, std::string fieldName) {
     for(auto& table:tables) {
-        if(table.GetTableName() == table_name) {
-            int ret= table.AlterTableDrop(field_name, this);
+        if(table.GetTableName() == tableName) {
+            int ret= table.AlterTableDrop(fieldName, this);
 
             return ret;
         }
     }
     return sTableNotFound;
 }
-int Database::AlterTableModify(std::string table_name, std::pair<std::string, std::string> field) {
+
+int Database::AlterTableModify(std::string tableName, std::pair<std::string, std::string> field) {
     for(auto& table :tables) {
-        if(table.GetTableName() == table_name) {
+        if(table.GetTableName() == tableName) {
             int ret = table.AlterTableModify(field);
             //std::cout<<"ret is "<<ret<<std::endl;
             return ret;
@@ -223,6 +224,25 @@ int Database::AlterTableModify(std::string table_name, std::pair<std::string, st
     }
     return sTableNotFound;
 }
+
+int Database::AlterTableColumnName(std::string tableName, std::string columnName, std::string newColumnName) {
+    for(auto & table : tables) {
+        if(table.GetTableName() == tableName) {
+            int ret = table.AlterTableColumnName(columnName, newColumnName);
+            //若ret返回sSuccess则修改成功,还需修改对应其他与改表字段有关联的表的约束
+            // if(ret == sSuccess) {
+            //     for(auto &constraint : constraints) {
+
+            //     }
+            // }
+
+            return ret;
+        }
+    }
+
+    return sTableNotFound;
+}
+
 int Database::AlterTableConstraint(std::string tableName, Constraint* constraint) {
     for(auto& table:tables) {
         if(table.GetTableName() == tableName) {
@@ -288,6 +308,253 @@ int Database::CheckUnique(std::string tableName, std::string fieldName) {
             return table.CheckUnique(fieldName);
         }
     }
-    return sFieldNotFound;
+    return sTableNotFound;
+}
+
+//判断记录是否满足条件(与table的该函数一致)
+int Database::CheckCondition(const std::unordered_map<std::string, std::any>& record,
+                             const std::vector<std::tuple<std::string, std::string, int>>& conditions, std::unordered_map<std::string, std::string> fieldMap) {
+
+    for(const auto& condition : conditions) {
+        std::string fieldName = std::get<0>(condition);
+        int expectedResult = std::get<2>(condition);
+        std::any value = sqlTool::TypeAndValueToAny(fieldMap[fieldName], std::get<1>(condition));
+
+        if(!record.count(fieldName)) {
+            //若都为NULL
+            if(value.type() == typeid(sqlTool::sqlNull)) {
+                continue;
+            }
+            //record为NULL,value不为NULL
+            return sConditionsNotSatisfied;
+        }
+        //若record为NULL, value不为NULL
+        if(value.type() == typeid(sqlTool::sqlNull)) {
+            return sConditionsNotSatisfied;
+        }
+        //比较
+        int compareResult = sqlTool::CompareAny(record.at(fieldName), value);
+
+        //根据结果与预期结果对比判断
+        if(compareResult == sEqual) {
+            if (expectedResult != sEqualCondition && expectedResult != sLessEqualCondition && expectedResult != sLargerEqualCondition)
+                return sConditionsNotSatisfied;
+        }
+        if(compareResult == sLarger) {
+            if(expectedResult != sLargerCondition && expectedResult != sLargerEqualCondition && expectedResult != sNotEqualCondition) {
+                return sConditionsNotSatisfied;
+            }
+        }
+        if(compareResult == sLess) {
+            if(expectedResult != sLessCondition && expectedResult != sLessEqualCondition && expectedResult != sNotEqualCondition) {
+                return sConditionsNotSatisfied;
+            }
+        }
+    }
+    return sSuccess;
+}
+//单表查询
+int Database::Select(std::string tableName,
+           std::vector<std::string> fieldName,
+           std::vector<std::tuple<std::string, std::string, int>> conditions,
+           std::vector<std::vector<std::any>> &returnRecords,
+           const std::vector<std::string>& orderbyKey) {
+    for(auto &table : tables) {
+        if(table.GetTableName() == tableName) {
+            int ret = table.Select(fieldName, conditions, returnRecords, orderbyKey);
+            return ret;
+        }
+    }
+
+    return sTableNotFound;
+}
+//多表查询
+int Database::Select(std::vector<std::string> tablesName,
+           std::vector<std::string> fieldsName,
+           std::vector<std::tuple<std::string, std::string, int>> conditions,
+           std::vector<std::vector<std::any>> &returnRecords,
+           const std::vector<std::string>& orderbyKey) {
+
+    //构造一个新表的参数
+    std::unordered_map<std::string, std::string> fieldMap;
+    std::vector<std::vector<std::vector<std::any>>> tdRecords;
+    std::vector<std::tuple<std::string, std::string, int>> emptyCondition;
+    std::vector<std::string> allFieldNames;
+    //往其中加*然后再无条件Select获得所有字段和记录
+    allFieldNames.push_back("*");
+    for(const auto& tableName: tablesName) {
+        for(auto & table: tables) {
+            if(table.GetTableName() == tableName) {
+                returnRecords.clear();
+                //获取记录
+                table.Select(allFieldNames, emptyCondition, returnRecords);
+
+                //获取Map
+                std::unordered_map<std::string, std::string> tableFieldMap = table.GetFieldMap();
+                //插入字段Map
+                for(const auto& x : tableFieldMap) {
+                    if(fieldMap.count(x.first) && fieldMap.at(x.first) != x.second) {
+                        //若有通字段但类型不匹配的则表无法做自然连接?
+                        return sDataTypeWrong;
+                    }
+                    fieldMap[x.first] = x.second;
+                }
+                //插入记录
+                tdRecords.push_back(returnRecords);
+            }
+        }
+    }
+    int sz = tdRecords.size();
+
+    returnRecords.clear();
+
+    allFieldNames.clear();
+    //returnRecords第一行全是字段名
+    std::vector<std::any> tmp;
+    if(fieldsName[0] == "*") {
+        //若为*全部
+        fieldsName.clear();
+
+
+        //先获取第一行字段名
+        std::map<std::string, int> mp;
+
+
+        for(const auto& innerRecords: tdRecords) {
+            for(const auto& name : innerRecords[0]) {
+                //获取其中的非重复字段插入tmp中(即自然连接)
+                if(!mp.count(sqlTool::AnyToString(name)))tmp.push_back(name);
+                mp[sqlTool::AnyToString(name)] = 1;
+            }
+        }
+
+
+        //填充自然连接字段作为输出字段
+        for(const auto& x : tmp) {
+            fieldsName.push_back(sqlTool::AnyToString(x));
+        }
+    }
+    else {
+        //先获取第一行字段名
+        std::map<std::string, int> mp;
+        for(const auto& inner_records: tdRecords) {
+            for(const auto& name : inner_records[0]) {
+                mp[sqlTool::AnyToString(name)] = 1;
+            }
+        }
+
+        //构造输出字段
+        for(const auto& name: fieldsName) {
+            if(!mp.count(name)) return sFieldNotFound;
+            tmp.push_back(std::any(name));
+        }
+    }
+
+    //tmp作为自然连接字段 作为返回记录的第一行
+    returnRecords.push_back(tmp);
+
+    std::vector<std::unordered_map<std::string, std::any>> records;
+    const auto& getReturnRecords = [&]() {
+        const auto& dfs = [&](auto&& self, int now, std::unordered_map<std::string, std::any> record) {
+
+            if(now == sz) {
+                std::vector<std::any> return_record;
+                for(const auto& fieldName: fieldsName) {
+                    //std::cout<<"check dfs: "<<field_name<<" ";
+                    if(!record.count(fieldName)) return_record.push_back(std::any(sqlTool::sqlNull()));
+                    else return_record.push_back(record.at(fieldName));
+                }
+                //std::cout<<std::endl;
+                if(CheckCondition(record, conditions, fieldMap) == sSuccess) {
+                    records.push_back(record);
+                    //return_records.push_back(return_record);
+                }
+                return;
+            }
+            const auto& inner_records = tdRecords[now];
+            //std::cout<<"checksize: "<<now<<" "<<td_records[now].size()<<std::endl;
+            std::unordered_map<std::string, std::any> new_record;
+            for(int i = 1; i < inner_records.size(); ++i) {
+                const auto& inner_record = inner_records[i];
+                new_record = record;
+                bool flag = 1;
+                for(int j = 0; j < inner_record.size(); ++j){
+                    if(new_record.count(sqlTool::AnyToString(inner_records[0][j])) && sqlTool::CompareAny(inner_record[j], new_record.at(sqlTool::AnyToString(inner_records[0][j])))!= sEqual){
+                        flag = 0;
+                        break;
+                    }
+                    new_record[sqlTool::AnyToString(inner_records[0][j])] = inner_record[j];
+                }
+                if(flag == 0) continue;
+                //std::cout<<now<<" "<<i<<" "<<inner_records.size()<<std::endl;
+                self(self, now + 1, new_record);
+            }
+        };
+        std::unordered_map<std::string, std::any> initial_record;
+        dfs(dfs, 0, initial_record);
+    };
+
+    getReturnRecords();
+
+    if(orderbyKey.size() > 0) {
+
+        std::sort(records.begin(), records.end(), [&](std::unordered_map<std::string, std::any> x, std::unordered_map<std::string, std::any> y) {
+            for(const auto& key: orderbyKey) {
+
+                int ret = sqlTool::CompareAny(x.at(key), y.at(key));
+                if(ret < 0) return true;
+                else if(ret > 0) return false;
+            }
+            return false;
+        });
+    }
+    for(const auto& record : records) {
+        std::vector<std::any> return_record;
+        for(const auto& fieldName: fieldsName) {
+            //std::cout<<"check dfs: "<<field_name<<" ";
+            if(!record.count(fieldName)) return_record.push_back(std::any(sqlTool::sqlNull()));
+            else return_record.push_back(record.at(fieldName));
+        }
+        return_record.push_back(return_record);
+    }
+
+    return sSuccess;
+
+    return sTableNotFound;
+}
+
+//插入记录
+int Database::Insert(const std::string& tableName,const std::vector<std::pair<std::string,std::string>>& records) {
+    for(auto &table : tables) {
+        if(table.GetTableName() == tableName) {
+            int ret = table.Insert(records, this);
+            return ret;
+        }
+    }
+
+    return sTableNotFound;
+}
+//更新(修改)记录
+int Database::Update(const std::string& tableName,const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions) {
+    for(auto &table : tables) {
+        if(table.GetTableName() == tableName) {
+            int ret = table.Update(values,conditions, this);
+            return ret;
+        }
+    }
+
+    return sTableNotFound;
+}
+
+int Database::Delete(const std::string& tableName,const std::vector<std::tuple<std::string, std::string, int>>& conditions) {
+    for(auto &table : tables) {
+        if(table.GetTableName() == tableName) {
+            int ret = table.Delete(conditions, this);
+            return ret;
+        }
+
+    }
+
+    return sTableNotFound;
 }
 

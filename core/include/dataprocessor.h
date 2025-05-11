@@ -37,7 +37,6 @@ public:
 
     static DataProcessor& GetInstance();
 
-
     //更新指针
     int UpdatePointer();
 //用户操作
@@ -62,13 +61,22 @@ public:
     int UpdateConstraintMap();
     int AlterTableAdd(std::string tableName, std::pair<std::string, std::string> field);//修改表结构,增加字段
     int AlterTableDrop(std::string tableName, std::string fieldName);          //删除字段
-    int AlterTableModify(std::string tableName, std::pair<std::string, std::string> field); //修改字段
+    int AlterTableModify(std::string tableName, std::pair<std::string, std::string> field); //修改字段内容
+    int AlterTableColumnName(std::string tableName, std::string columnName, std::string newColumnName);//修改列名
     int AlterTableConstraint(std::string tableName, Constraint* constraint);    //添加约束条件
     int AlterTableDeleteConstraint(std::string tableName, std::string constraintName); ///删除约束
     int ShowConstraints(std::vector<std::vector<std::any>>& retRecords);
 //表DML操作
-    int Select();   //单条查询
-    // int Select();   //多条查询
+    int Select(std::string tableName,
+               std::vector<std::string> fieldName,
+               std::vector<std::tuple<std::string, std::string, int>> conditions,
+               std::vector<std::vector<std::any>> &returnRecords,
+               const std::vector<std::string>& orderbyKey = std::vector<std::string>());   //单表查询
+    int Select(std::vector<std::string> tablesName,
+               std::vector<std::string> fieldName,
+               std::vector<std::tuple<std::string, std::string, int>> conditions,
+               std::vector<std::vector<std::any>> &returnRecords,
+               const std::vector<std::string>& orderbyKey = std::vector<std::string>());   //多表查询
     int Insert(const std::string& tableName,const std::vector<std::pair<std::string,std::string>>& records);   //插入记录 records中 pair<field, values>
 
     int Update(const std::string& tableName,const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions);   //更新(修改)记录

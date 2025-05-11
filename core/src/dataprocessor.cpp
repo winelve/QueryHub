@@ -462,6 +462,28 @@ int DataProcessor::AlterTableModify(std::string tableName, std::pair<std::string
     UpdatePointer();
     return ret;
 }
+
+//修改列名
+int DataProcessor::AlterTableColumnName(std::string tableName, std::string columnName, std::string newColumnName) {
+    if(currentUserName.empty()) {
+        return sUserNotLogin;
+    }
+    if (currentDatabase == nullptr) {
+        return sDatabaseNotUse;
+    }
+    if(currentDatabase->FindTable(tableName) != sSuccess) {
+        return sTableNotFound;
+    }
+
+    //检查权限
+    if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::ALTER) != sSuccess) return sInsufficientAuthority;
+
+    int ret = currentDatabase->AlterTableColumnName(tableName, columnName, newColumnName);
+
+    return ret;
+}
+
+
 int DataProcessor::AlterTableConstraint(std::string tableName, Constraint* constraint) {
     if(currentUserName.empty()) {
         return sUserNotLogin;
@@ -572,6 +594,63 @@ int DataProcessor::ShowConstraints(std::vector<std::vector<std::any>>& retRecord
 }
 //------------DML----------
 
+
+//单表查询
+int DataProcessor::Select(std::string tableName,
+           std::vector<std::string> fieldName,
+           std::vector<std::tuple<std::string, std::string, int>> conditions,
+           std::vector<std::vector<std::any>> &returnRecords,
+                          const std::vector<std::string>& orderbyKey) {
+
+    returnRecords.clear();
+    if (currentUser == nullptr) {
+        return sUserNotLogin;
+    }
+    if (currentDatabase == nullptr) {
+        return sDatabaseNotUse;
+    }
+    if(currentDatabase->FindTable(tableName) != sSuccess) {
+        return sTableNotFound;
+    }
+    if(currentUser->CheckAuthority(currentDatabaseName,tableName,authorityNum::SELECT) != sSuccess) return sInsufficientAuthority;
+    int ret = currentDatabase->Select(tableName, fieldName, conditions,
+                                       returnRecords, orderbyKey);
+    UpdatePointer();
+    return ret;
+
+}
+//多表查询
+int DataProcessor::Select(std::vector<std::string> tablesName,
+           std::vector<std::string> fieldName,
+           std::vector<std::tuple<std::string, std::string, int>> conditions,
+           std::vector<std::vector<std::any>> &returnRecords,
+        const std::vector<std::string>& orderbyKey) {
+
+
+    returnRecords.clear();
+    if (currentUser == nullptr) {
+        return sUserNotLogin;
+    }
+    if (currentDatabase == nullptr) {
+        return sDatabaseNotUse;
+    }
+    for(const auto &tableName : tablesName) {
+        if(currentDatabase->FindTable(tableName) != sSuccess) {
+            return sTableNotFound;
+        }
+    }
+
+    for(const auto &tableName : tablesName) {
+        if(currentUser->CheckAuthority(currentDatabaseName,tableName,authorityNum::SELECT) != sSuccess) return sInsufficientAuthority;
+    }
+
+    int ret = currentDatabase->Select(tablesName, fieldName, conditions,
+                                      returnRecords, orderbyKey);
+    UpdatePointer();
+    return ret;
+}
+
+
 //插入记录 records中 pair<field, values>
 int DataProcessor::Insert(const std::string& tableName,const std::vector<std::pair<std::string,std::string>>& records) {
     if(currentUserName.empty()) {
@@ -589,8 +668,10 @@ int DataProcessor::Insert(const std::string& tableName,const std::vector<std::pa
     //检查权限
     if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::INSERT) != sSuccess) return sInsufficientAuthority;
 
+    int ret = currentDatabase->Insert(tableName, records);
+    UpdatePointer();
 
-    return sSuccess;
+    return ret;
 }
 
 //更新(修改)记录
@@ -609,7 +690,13 @@ int DataProcessor::Update(const std::string& tableName,const std::vector<std::pa
     //检查权限
     if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::UPDATE) != sSuccess) return sInsufficientAuthority;
 
-    return sSuccess;
+    //进行删除
+    int ret = currentDatabase->Update(tableName, values,conditions);
+
+    //过程中传了DB故需更新
+    UpdatePointer();
+
+    return ret;
 }
 
 
@@ -629,7 +716,13 @@ int DataProcessor::Delete(const std::string& tableName,const std::vector<std::tu
     //检查权限
     if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::DELETE) != sSuccess) return sInsufficientAuthority;
 
-    return sSuccess;
+    //进行删除
+    int ret = currentDatabase->Delete(tableName, conditions);
+
+    //过程中传了DB故需更新
+    UpdatePointer();
+
+    return ret;
 }
 
 

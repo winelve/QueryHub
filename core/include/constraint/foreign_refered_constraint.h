@@ -6,7 +6,7 @@
 
 #include "constraint.h"
 
-// 被外键引用约束：被引用的表名,对应的字段名,依赖表名, 依赖字段名
+// 被外键引用约束：对应的字段名,约束名,依赖表名, 依赖字段名
 class ForeignReferedConstraint: public Constraint {
 
 public:
