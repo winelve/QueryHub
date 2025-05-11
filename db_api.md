@@ -12,18 +12,26 @@
 - [x] CreateTable(std::string tableName, std::vector<std::pair<std::string, std::string>> fields, std::vector<Constraint *> constraints): 创建表
 - [x] DropTable(std::string tableName): 删除表
 - [x] AlterTableName(const std::string& databaseName, const std::string& tableName, const std::string& newTableName): 修改表名
-- [ ] DescribeTable(std::string tableName, std::vector<std::pair<std::string, std::string>>& fields, std::vector<Constraint*>& constraints): 查看表结构
-- [ ] UpdateConstraintMap(): 更新约束映射
 - [x] AlterTableAdd(std::string tableName, std::pair<std::string, std::string> field): 修改表结构，增加字段
 - [x] AlterTableDrop(std::string tableName, std::string fieldName): 删除字段
 - [x] AlterTableModify(std::string tableName, std::pair<std::string, std::string> field): 修改字段
+- [ ] int AlterTableColumnName(std::string tableName, std::string columnName, std::string newColumnName);//修改列名
 - [x] AlterTableConstraint(std::string tableName, Constraint* constraint): 添加约束条件
 - [ ] AlterTableDeleteConstraint(std::string tableName, std::string constraintName): 删除约束
 - [ ] ShowConstraints(std::vector<std::vector<std::any>>& retRecords): 显示约束
 
 ## 表DML操作
 
-- [ ] Select(): 单条查询
+- [ ]  int Select(std::string tableName,
+                 std::vector<std::string> fieldName,
+                 std::vector<std::tuple<std::string, std::string, int>> conditions,
+                 std::vector<std::vector<std::any>> &returnRecords,
+                 const std::vector<std::string>& orderbyKey = std::vector<std::string>());   //单表查询
+      int Select(std::vector<std::string> tablesName,
+                 std::vector<std::string> fieldName,
+                 std::vector<std::tuple<std::string, std::string, int>> conditions,
+                 std::vector<std::vector<std::any>> &returnRecords,
+                 const std::vector<std::string>& orderbyKey = std::vector<std::string>());   //多表查询
 - [ ] Insert(const std::string& tableName, const std::vector<std::pair<std::string, std::string>>& records): 插入记录
 - [ ] Update(const std::string& tableName, const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions): 更新(修改)记录
 - [ ] Delete(const std::string& tableName, const std::vector<std::tuple<std::string, std::string, int>>& conditions): 删除记录

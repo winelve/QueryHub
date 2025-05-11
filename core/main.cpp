@@ -217,7 +217,7 @@ void writeDataToFile() {
 }
 
 void testUserAuthorityPart() {
-    // DataProcessor::GetInstance().Read(1);
+    DataProcessor::GetInstance().Read(1);
 
     DataProcessor::GetInstance().CreateUser("xt", "23456");
     std::cout <<  " 1" << std::endl;
@@ -247,18 +247,24 @@ void testUserAuthorityPart() {
     std::cout <<  " 11" << std::endl;
     DataProcessor::GetInstance().GrantAuthority("cat", "school", "hhh", "create");
     std::cout <<  " 12" << std::endl;
-    DataProcessor::GetInstance().Write();
+    DataProcessor::GetInstance().AlterTableName("school","student", "teacher");
     std::cout <<  " 13" << std::endl;
+    DataProcessor::GetInstance().UseDatabase("school");
+    DataProcessor::GetInstance().AlterTableColumnName("hhh","name", "number");
+    DataProcessor::GetInstance().Write();
+    std::cout <<  " 14" << std::endl;
 }
 
 int main() {
     //测试数据
 
     // writeDataToFile();
-    readDataFromFile();
+    // readDataFromFile();
 
     testUserAuthorityPart();
+    // DataProcessor::GetInstance().Read(1);
 
+    // DataProcessor::GetInstance().ShowTables();
 
 //---------B+树--------------
     // bPlusTree bPlusTree;
