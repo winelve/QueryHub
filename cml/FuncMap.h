@@ -5,6 +5,10 @@
 #include <functional>
 #include <QMap>
 #include <QVariant>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QFile>
+#include <QFileInfo>
 
 #include "dataprocessor.h"
 
@@ -13,6 +17,7 @@ class FuncMap{
 public:
     FuncMap():db(DataProcessor::GetInstance()) {
         setup();
+        read_js_file();
     }
 
     void setup() {
@@ -71,6 +76,11 @@ public:
 
     }
 
+    QJsonObject get_params_js() {
+        return params_map_;
+    }
+
+
     QMap<QString,std::function<int(const QVariantList &)>> map() {
         return func_map_;
     }
@@ -78,6 +88,17 @@ public:
 private:
     DataProcessor db;
     QMap<QString,std::function<int(const QVariantList &)>> func_map_;
+    QJsonObject params_map_;
+
+    void read_js_file() {
+        QFile file("../../cml/res/params.json");
+        file.open(QFile::ReadOnly);
+        QByteArray all = file.readAll();
+        QJsonDocument doc = QJsonDocument::fromJson(all);
+        params_map_ = doc.object();
+        file.close(); //有风险,但是无视风险.
+    }
+
 };
 
 
