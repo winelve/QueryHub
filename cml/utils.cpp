@@ -13,25 +13,36 @@ void printJs(const QJsonObject &jsonObj) {
 }
 
 
-Constraint* CreateConstraint(const QString& cs_type,const QString& cname,const QJsonArray& csparams) {
+Constraint* CreateConstraint(const QString& tb_name,const QString& cs_type,const QString& cname,const QJsonArray& csparams) {
+    QString constraint_name = tb_name+ "_"+ cname + "_" + cs_type;
     if(cs_type=="not_null") {
-        return new NotNullConstraint(cname.toStdString(),cs_type.toStdString());
+        return new NotNullConstraint(cname.toStdString(),constraint_name.toStdString());
     }
 
     else if (cs_type=="default") {
-        return new DefaultConstraint(cname.toStdString(),cs_type.toStdString(),csparams[0].toString());
+        return new DefaultConstraint(cname.toStdString(),constraint_name.toStdString(),csparams[0].toString());
     }
 
     else if (cs_type=="unique") {
-        return new UniqueConstraint(cname.toStdString(),cs_type.toStdString());
+        return new UniqueConstraint(cname.toStdString(),constraint_name.toStdString());
     }
 
     else if (cs_type=="primary_key") {
-        return new PrimaryKeyConstraint(cname.toStdString(),cs_type.toStdString());
+        return new PrimaryKeyConstraint(cname.toStdString(),constraint_name.toStdString());
     }
 
     else if (cs_type=="foregin_key") {
-        return new ForeignKeyConstraint(cname.toStdString(),cs_type.toStdString(),csparams[0].toString().toStdString(),csparams[1].toString().toStdString());
+        return new ForeignKeyConstraint(cname.toStdString(),constraint_name.toStdString(),csparams[0].toString().toStdString(),csparams[1].toString().toStdString());
     }
     return nullptr;
 }
+
+void printStdV(const std::vector<std::string>& sv) {
+    QString output;
+    for (const auto& str : sv) {
+        output += QString::fromStdString(str) + ", ";
+    }
+    output.chop(1); // 移除最后一个多余的制表符
+    qDebug() << output;
+}
+

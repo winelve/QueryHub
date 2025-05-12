@@ -1,5 +1,6 @@
 #include "FuncMap.h"
 #include "utils.h"
+#include "infolog.h"
 
 FuncMap::FuncMap(): db(DataProcessor::GetInstance()) {
     setup();
@@ -26,7 +27,7 @@ void FuncMap::setup() {
     };
 
     func_map_["CreateTable"] = [this](const QVariantList &params) -> int {
-        std::string tb_name =  params[0].toString().toStdString();
+        QString tb_name =  params[0].toString();
         QJsonArray columns = params[1].toJsonArray();
 
         std::vector<std::pair<std::string, std::string>> fields;
@@ -38,7 +39,7 @@ void FuncMap::setup() {
 
             QString cname = column_js["cname"].toString();
             QString ctype = column_js["ctype"].toString();
-            QJsonArray cs_array = column_js["constrains"].toArray();
+            QJsonArray cs_array = column_js["constraints"].toArray();
 
             fields.push_back(std::pair<std::string, std::string>(cname.toStdString(),ctype.toStdString()));
             for(const auto& cs: cs_array) {
@@ -46,19 +47,22 @@ void FuncMap::setup() {
                 QString cs_type = constrain_js["csname"].toString();
                 QJsonArray csparams = constrain_js["params"].toArray();
 
-                Constraint *filed_cs = CreateConstraint(cs_type,cname,csparams);
-                if(!filed_cs) continue;
+                Constraint *filed_cs = CreateConstraint(tb_name,cs_type,cname,csparams);
+                if(!filed_cs) {
+                    continue;
+                }
 
-                constraints.push_back(filed_cs);
-                // 存疑
+                constraints.push_back(CreateConstraint(tb_name,cs_type,cname,csparams));
                 if(cs_type=="foregin_key") {
-                    QString ref_tb_name = csparams[0].toString();
+                    // QString ref_tb_name = csparams[0].toString();
                     QString ref_filed_name = csparams[1].toString();
-                    constraints.push_back(new ForeignReferedConstraint(ref_filed_name.toStdString(),"ref_foregin_key",tb_name,cname.toStdString()));
+                    QString ccs_name = tb_name+ "_"+ cname + "_" + cs_type + "refered";
+                    constraints.push_back(new ForeignReferedConstraint(ref_filed_name.toStdString(),ccs_name.toStdString(),tb_name.toStdString(),cname.toStdString()));
                 }
             }
         }
-        return db.CreateTable(tb_name,fields,constraints);
+        qDebug() <<"size: " << constraints.size();
+        return db.CreateTable(tb_name.toStdString(),fields,constraints);
     };
 
     func_map_["DropTable"] = [this](const QVariantList &params) -> int {
@@ -96,7 +100,7 @@ void FuncMap::setup() {
                 QString cs_type = constrain_js["csname"].toString();
                 QJsonArray csparams = constrain_js["params"].toArray();
 
-                Constraint *filed_cs = CreateConstraint(cs_type,cname,csparams);
+                Constraint *filed_cs = CreateConstraint(tb_name,cs_type,cname,csparams);
                 if(!filed_cs) continue;
 
                 constraints.push_back(filed_cs);
@@ -135,6 +139,85 @@ void FuncMap::setup() {
         std::string db_name = params[0].toString().toStdString();
         return db.UseDatabase(db_name);
     };
+
+
+    func_map_["ShowDatabases"] = [this](const QVariantList &params) -> int {
+        std::vector<std::string> allDatabases;
+        int res = db.ShowDatabases(allDatabases);
+        //下面展示allDatabases的内容.
+        InfoLog::inst().print("---DataBase--");
+        printStdV(allDatabases);
+        return res;
+    };
+
+    func_map_["ShowTables"] = [this](const QVariantList &params) -> int {
+        std::vector<std::string> returnTables;
+        int res = db.ShowTables(returnTables);
+        //下面展示returnTables的内容.
+        InfoLog::inst().print("---Tables--");
+        printStdV(returnTables);
+        return res;
+    };
+
+    func_map_["DescribeTable"] = [this](const QVariantList &params) -> int {
+        std::string tb_name = params[0].toString().toStdString();
+        std::vector<std::pair<std::string,std::string>> fields;
+        std::vector<Constraint*> constraints;
+
+        int res = db.DescribeTable(tb_name,fields,constraints);
+        //下面展示 fields && constraints 的内容.
+        InfoLog::inst().print("Desc Func Used.");
+        return res;
+    };
+
+
+    func_map_["AlterTableColumnName"] = [this](const QVariantList &params) -> int {
+        QString tb_name = params[0].toString();
+        QString column_name = params[1].toString();
+        QString new_name = params[2].toString();
+        return db.AlterTableColumnName(tb_name.toStdString(),column_name.toStdString(),new_name.toStdString());
+    };
+
+    func_map_["AlterTableConstraint"] = [this](const QVariantList &params) -> int {
+        QString tb_name = params[0].toString();
+        QString cname = params[1].toString();
+
+        QJsonArray cs_array = params[2].toJsonArray();
+        std::vector<Constraint *> constraints;
+
+        for(const auto& cs: cs_array) {
+            QJsonObject constrain_js = cs.toObject();
+            QString cs_type = constrain_js["csname"].toString();
+            QJsonArray csparams = constrain_js["params"].toArray();
+
+            Constraint *filed_cs = CreateConstraint(tb_name,cs_type,cname,csparams);
+            if(!filed_cs) continue;
+
+            constraints.push_back(filed_cs);
+        }
+
+        int res = 0;
+        for(const auto& cons: constraints) {
+            res = std::max(res,db.AlterTableConstraint(tb_name.toStdString(),cons));
+        }
+        return res;
+    };
+
+    func_map_["AlterTableDeleteConstraint"] = [this](const QVariantList &params) -> int {
+        QString tb_name = params[0].toString();
+        QString cname = params[1].toString();
+        QString cs_name = params[2].toString();
+        //合成名称
+        QString constraint_name = tb_name+"_"+cname+"_"+cs_name;
+        return db.AlterTableDeleteConstraint(tb_name.toStdString(),constraint_name.toStdString());
+    };
+
+
+    // -----模版-----
+    // func_map_[""] = [this](const QVariantList &params) -> int {
+    //     return -1;
+    // };
+
 
 
 }

@@ -236,6 +236,53 @@ QJsonObject AlterParser::parseCMD(const QString &sql) {
         ast_data["name"] = table_name;
         ast_data["new_name"] = new_table_name;
     }
+
+    // 新增：处理 ALTER TABLE ADD CONSTRAINT
+    else if ((match = alterTableAddConstraintPattern.match(sql)).hasMatch()) {
+        QString table_name = match.captured(1);
+        QString column_name = match.captured(2);
+        QString constraint_name = match.captured(3);
+        QString params_str = match.captured(4).trimmed(); // 可能为空
+
+        ast_data["object"] = "constraint";
+        ast_data["op"] = "add";
+        ast_data["tb_name"] = table_name;
+        ast_data["cname"] = column_name;
+
+        QJsonArray constraints_array;
+        QJsonObject constraint_obj;
+
+        constraint_obj["csname"] = constraint_name;
+
+        // 处理参数
+        if (!params_str.isEmpty()) {
+            QJsonArray params_array;
+            QStringList params = params_str.split(",", Qt::SkipEmptyParts);
+
+            for (const auto& param : params) {
+                params_array.append(param.trimmed());
+            }
+
+            constraint_obj["params"] = params_array;
+        } else {
+            constraint_obj["params"] = QJsonArray();
+        }
+
+        constraints_array.append(constraint_obj);
+        ast_data["constraints"] = constraints_array;
+    }
+    // 新增：处理 ALTER TABLE DELETE CONSTRAINT
+    else if ((match = alterTableDeleteConstraintPattern.match(sql)).hasMatch()) {
+        QString table_name = match.captured(1);
+        QString column_name = match.captured(2);
+        QString constraint_name = match.captured(3);
+
+        ast_data["object"] = "constraint";
+        ast_data["op"] = "drop";
+        ast_data["tb_name"] = table_name;
+        ast_data["cname"] = column_name;
+        ast_data["cs_name"] = constraint_name;
+    }
     else {
         ast_data["status"] = "error";
         ast_data["error_log"] = ast_data["error_log"].toString() + "Alter didn't match: >>" + sql + "<<\n";
@@ -243,7 +290,6 @@ QJsonObject AlterParser::parseCMD(const QString &sql) {
 
     return ast_data;
 }
-
 /*
 ------------------Other CMD------------------
 */
@@ -261,13 +307,17 @@ QJsonObject OtherCmdParser::parseCMD(const QString &sql) {
         ast_data["db_name"] = db_name;
 
     } else if ((match = showDatabasesPattern.match(sql)).hasMatch()) {
-        ast_data["status"] = "error";
+        ast_data["op"] = "show";
+        ast_data["object"] = "database";
 
     } else if ((match = showTablesPattern.match(sql)).hasMatch()) {
-        ast_data["status"] = "error";
+        ast_data["op"] = "show";
+        ast_data["object"] = "table";
 
     } else if ((match = describeTablePattern.match(sql)).hasMatch()) {
-        ast_data["status"] = "error";
+        ast_data["op"] = "desc";
+        ast_data["object"] = "table";
+        ast_data["name"] = match.captured(1);
 
     } else {
         // No pattern matched

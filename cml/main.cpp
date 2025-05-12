@@ -15,21 +15,18 @@ void test_sql() {
         {"CREATE", {
                        "CREATE DATABASE test_db;",
                        "USE test_db;",
-                       "CREATE TABLE users (id INT NOT_NULL PRIMARY_KEY, name STRING, email STRING);",
-                       "CREATE TABLE orders (order_id INT AUTO_INCREMENT PRIMARY_KEY, user_id INT, amount STRING);"
-                   }},/*
-        {"ALTER", {
-                      "ALTER TABLE users ADD COLUMN age INT;",
-                      "ALTER TABLE users MODIFY email STRING;",
-                      "ALTER TABLE orders ADD COLUMN status STRING;"
-                  }},*/
-        // {"DELETE", {
-        //                "DROP TABLE users;",
-        //                "DROP DATABASE test_db;"
-        //            }}
+                       "CREATE TABLE users (id INT PRIMARY_KEY, name STRING, email STRING);",
+                       "CREATE TABLE orders (order_id INT PRIMARY_KEY, user_id INT, amount STRING);"
+                   }},
+        {"Other", {
+                    "USE test_db;",
+                    // "ALTER TABLE orders ADD CONSTRAINT user_id NOT_NULL;",
+                    // "ALTER TABLE orders DELETE CONSTRAINT user_id NOT_NULL;"
+                      "ALTER TABLE orders RENAME COLUMN user_id TO user_iddddddddd;"
+                   }},
     };
 
-    QStringList ss = {"CREATE"};
+    QStringList ss = {"Other"};
     for(const auto&s: ss) {
         qDebug() << "---------------" << s << "---------------";
 
@@ -47,7 +44,7 @@ void test_sql() {
 
 int main() {
 
-    // DataProcessor::GetInstance().Read(0);
+    DataProcessor::GetInstance().Read(0);
     DataProcessor::GetInstance().CreateUser("root","123456");
     DataProcessor::GetInstance().Login("root","123456");
 

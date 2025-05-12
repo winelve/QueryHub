@@ -30,7 +30,7 @@
             {
                	"cname":"name",
                 "ctype":"type",
-                "constrains": [
+                "constraints": [
                     {
                         "csname":"csname",
                         "params":[]
@@ -40,7 +40,7 @@
            {
                "cname":"name",
                 "ctype":"type",
-                "constrains": [
+                "constraints": [
                     {
                         "csname":"csname",
                         "params":[]
@@ -112,7 +112,7 @@ add-column
         {
            "cname":"name",
 	        "ctype":"type",
-    	    "constrains": [
+    	    "constraints": [
                 {
             		"csname":"csname",
                		"params":[]
@@ -122,7 +122,7 @@ add-column
 	   {
            "cname":"name",
 	        "ctype":"type",
-    	    "constrains": [
+    	    "constraints": [
                 {
             		"csname":"csname",
                		"params":[]
@@ -158,6 +158,35 @@ drop-column
     
 }
 
+add-cs
+{
+    "data": {
+        "op": "add",
+        "object": "constraint",
+        "tb_name":"tb_name",
+        "cname":"cname",
+        "constraints": [
+                {
+            		"csname":"csname",
+               		"params":[]
+           		},
+            ]
+    }   
+}
+
+
+drop-cs
+{
+    "data": {
+        "op":"drop",
+        "object": "constraint",
+        "tb_name":"tb_name",
+        "cname":"cname",
+        "cs_name":"name
+    }
+}
+
+
 
 
 
@@ -177,6 +206,7 @@ drop-column
 foregin_key(reference_tb,reference_column)
 
 //other cmds
+//use database
 {
     "cmd":"use",
     "data": {
@@ -188,12 +218,55 @@ foregin_key(reference_tb,reference_column)
 }
 
 
+//show database
+
+{
+    "cmd":"show",
+    "data": {
+        "op":"show",
+        "object":"database",
+    }
+    
+}
+
+//show tables
+{
+    "cmd":"show",
+    "data": {
+        "op":"show",
+        "object":"table",
+    }
+}
+
+// Show Constraints
+{
+    "cmd":"show",
+    "data": {
+        "op":"show",
+        "object":"constraints",
+    }
+    
+}
+//desc table
+{
+    "cmd": "desc",
+    "data": {
+        "op":"desc",
+        "object":"table",
+        "name": "name"
+    }
+}
+
+
+
+
+
 
 
 
 ```
 
-
+## JsonData
 
 ```json
 
@@ -203,54 +276,51 @@ foregin_key(reference_tb,reference_column)
     "cmds":[
         {
             "cmd": "alter",
-            "op": {
-                "rename": {
-                    "object": {
-                        "database": {
-                            "func":["AlterDatabaseName"],
-                            "keys": ["name", "new_name"]
-                        },
-                        "table": {
-                            "func":["AlterTableName"],
-                            "keys": ["name", "new_name"]
-                        },
-                        "column": {
-                            "func":["AlterColumnName"],
-                            "keys": ["table_name", "column_name", "new_name"]
-                        }
-                    }
+            "rename": {
+                "database": {
+                    "func":["AlterDatabaseName"],
+                    "keys": ["name", "new_name"]
                 },
-                "add": {
-                    "object": { 
-                        "column": {
-                            "func": ["AlterTableAdd","AlterTableConstraint"],
-                            "keys": ["table_name", "columns"]
-                        }
-                    }
+                "table": {
+                    "func":["AlterTableName"],
+                    "keys": ["name", "new_name"]
                 },
-                "modify": {
-                    "object": {
-                        "column": {
-                            "func": ["AlterTableModify"],
-                            "keys": ["table_name", "column_name", "new_type"]
-                        }
-                    }
+                "column": {
+                    "func":["AlterTableColumnName"],
+                    "keys": ["table_name", "column_name", "new_name"]
+                }
+            },
+            "add": {
+                "column": {
+                    "func": ["AlterTableAdd","AlterTableConstraint"],
+                    "keys": ["table_name", "columns"]
                 },
-                "drop": {
-                    "object": {
-                        "column": {
-                            "func":["AlterTableDrop"],
-                            "keys": ["table_name", "column_name"]
-                        }
-                    }
+                "constraint": {
+                    "func":["AlterTableConstraint"],
+                    "keys":["tb_name","cname","constraints"]
+                }
+            },
+            "modify": {
+                "column": {
+                    "func": ["AlterTableModify"],
+                    "keys": ["table_name", "column_name", "new_type"]
+                }
+            },
+            "drop": {
+                "column": {
+                    "func":["AlterTableDrop"],
+                    "keys": ["table_name", "column_name"]
+                },
+                "constraint": {
+                    "func":["AlterTableDeleteConstraint"],
+                    "keys":["tb_name","cname","cs_name"]
                 }
             }
-            
         },
         
         {
             "cmd": "create",
-            "object": {
+            "create": {
                 "database": {
                     "func":["CreateDatabase"],
                     "keys": ["name"]
@@ -264,7 +334,7 @@ foregin_key(reference_tb,reference_column)
         
         {
             "cmd": "drop",
-            "object": {
+            "drop": {
                 "database": {
                     "func":["DeleteDatabase"],
                     "keys": ["name"]
@@ -276,20 +346,49 @@ foregin_key(reference_tb,reference_column)
                 }
             }
         },
+
         {
             "cmd":"use",
-            "object": {
-                "database": {
+            "use": {
+                    "database": {
                     "func": ["UseDatabase"],
                     "keys": ["db_name"]
                 }
             }
-        }
+
+        },
+        
+        {
+            "cmd":"show",
+            "show": {
+                "database": {
+						"func": ["ShowDatabases"],
+                     "keys": []
+                },
+                "table": {
+                    "func": ["ShowTables"],
+                    "keys": []
+                },
+                "constraints": {
+                    "func": ["ShowConstraints"],
+                    "keys": []
+                }
+            }
+        },
+        
+        {
+            "cmd":"desc",
+            "desc": {
+                "table": {
+                    "func":["DescribeTable"],
+                    "keys":["name"]
+                }
+            }
+        },
+        
         
 
     ]
 }
 ```
-
-
 
