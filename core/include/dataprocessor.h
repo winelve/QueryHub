@@ -98,6 +98,7 @@ public:
     int RevokeDatabaseOwner(const std::string& databaseName);//(只有root能进行)收回用户数据库所有权
 
     int RevokeAuthority(const std::string& userName, const std::string& databaseName,const std::string& tableName,const std::string& authority) ;//收回权限
+
 };
 
 #endif // DATAPROCESSOR_H

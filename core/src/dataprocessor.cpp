@@ -120,8 +120,10 @@ int DataProcessor::CreateDatabase(std::string databaseName){
         }
     }
 
+    //谁创建谁就说该数据库的拥有者
+
     //判断权限(只有root能够)
-    if(!isRoot()) return sInsufficientAuthority;
+    // if(!isRoot()) return sInsufficientAuthority;
 
     //to do
     databases.push_back(Database(databaseName, currentUserName));
@@ -139,8 +141,8 @@ int DataProcessor::DeleteDatabase(std::string databaseName) {
         auto& database = databases[i];
         if(database.GetDatabaseName() == databaseName) {
 
-            //判断权限(只有root能够)
-            if(!isRoot()) return sInsufficientAuthority;
+            //判断权限(root或该数据库拥有者有权)
+            if(!isRoot() && !isDatabaseOwner(databaseName)) return sInsufficientAuthority;
 
 
             if(currentDatabase != nullptr) {
@@ -386,7 +388,7 @@ int DataProcessor::DescribeTable(std::string tableName,std::vector<std::pair<std
     return ret;
 }
 
-
+//有问题
 int DataProcessor::UpdateConstraintMap() {
     constraintMap.clear();
     for(const auto& database : databases) {
@@ -498,18 +500,30 @@ int DataProcessor::AlterTableConstraint(std::string tableName, Constraint* const
     //检查权限
     if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::ALTER) != sSuccess) return sInsufficientAuthority;
 
+    auto it = constraintMap.find(constraint->GetConstraintName());
+    if(it == constraintMap.end()) {
+        printf("nm\n");
+    }  else {
+        printf("lll\n");
+    }
+
+    printf("%s\n", constraint->GetConstraintName().c_str());
     //若已存在返回sConstraintNameExisted
     if(constraintMap.count(constraint->GetConstraintName())) return sConstraintNameExisted;
     //反之对该表进行加约束操作
     int ret = currentDatabase->AlterTableConstraint(tableName, constraint);
+
+    // if(ret == sSuccess) constraintMap[constraint->GetConstraintName()] = {currentDatabaseName, tableName};
     UpdateConstraintMap();
     return ret;
 }
 
 int DataProcessor::AlterTableDeleteConstraint(std::string tableName, std::string constraintName){
+
     if(currentUserName.empty()) {
         return sUserNotLogin;
     }
+
     if (currentDatabase == nullptr) {
         return sDatabaseNotUse;
     }
@@ -798,7 +812,8 @@ int DataProcessor::Read(bool isPrint) {
     if(isPrint) {
         std::cout << users.size() << std::endl;
     }
-
+    //更新约束Map
+    UpdateConstraintMap();
     return 0;
 }
 
