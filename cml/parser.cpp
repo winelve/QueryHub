@@ -29,7 +29,11 @@ QJsonObject Parser::parse_sql(const QString &_sql){
         {"drop",&drop_parser},
         {"use",&other_parser},
         {"show",&other_parser},
-        {"desc",&other_parser}
+        {"desc",&other_parser},
+        {"insert",&dml_parser},
+        {"select",&dml_parser},
+        {"update",&dml_parser},
+        {"delete",&dml_parser},
     };
 
     auto it = cmd_parsers.find(first_keyword);

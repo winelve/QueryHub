@@ -124,6 +124,80 @@ private:
 
 };
 
+class DMLParser: public BaseCmdParser {
+public:
+    QJsonObject parseCMD(const QString &sql) override;
+
+private:
+    // ----- INSERT -----
+    const QRegularExpression insertPattern{
+        QStringLiteral("^INSERT\\s+INTO\\s+(\\w+)\\s*\\(([^)]+)\\)\\s+VALUES\\s+([\\s\\S]*?);$"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+    const QRegularExpression valuesTuplePattern{
+        QStringLiteral("\\(([^)]+)\\)")
+    };
+
+
+    // ---- SELECT  ----
+    const QRegularExpression selectPattern{
+        QStringLiteral(
+            "^SELECT\\s+"                   // SELECT
+            "\\(([^)]+)\\)"                 // (columns) - Group 1
+            "\\s+FROM\\s+"                  // FROM
+            "(\\w+)"                        // table - Group 2
+            "(?:\\s+WHERE\\s+\\(([^)]+)\\))?" // Optional WHERE (...) - Group 3
+            "(?:\\s+JOIN\\s+\\(([^)]+)\\))?"  // Optional JOIN (...) - Group 4
+            "(?:\\s+ORDER\\s+BY\\s+\\(([^)]+)\\))?" // Optional ORDERED BY (...) - Group 5
+            "\\s*;$"                        // Optional whitespace and semicolon at end
+            ),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression andpattern{
+        QStringLiteral("\\s+(AND|OR)\\s+"),
+        QRegularExpression::CaseInsensitiveOption}
+    ;
+
+    const QRegularExpression whereConditionPattern{
+        QStringLiteral(
+            "([a-zA-Z0-9_]+)\\s*"           // 左侧操作数 (字母、数字、下划线)
+            "([><=!]=?)"                    // 比较运算符
+            "\\s*([a-zA-Z0-9_]+|\\d+)"     // 右侧操作数 (字母、数字、下划线或数字)
+            )
+    };
+
+    // ----- UPDATE -----
+    const QRegularExpression updatePattern{
+        QStringLiteral(
+            "^UPDATE\\s+"                   // UPDATE
+            "(\\w+)\\s+"                    // table name - Group 1
+            "SET\\s+\\(([^)]+)\\)"          // SET (c1=v1,c2=v2,...) - Group 2
+            "(?:\\s+WHERE\\s+\\(([^)]+)\\))?" // Optional WHERE (...) - Group 3
+            "\\s*;$"                        // Optional whitespace and semicolon at end
+            ),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    // For parsing SET clause key-value pairs
+    const QRegularExpression setValuePattern{
+        QStringLiteral(
+            "([a-zA-Z0-9_]+)\\s*=\\s*([a-zA-Z0-9_]+|\\d+)"  // column=value
+            )
+    };
+
+    // ----- DELETE -----
+    const QRegularExpression deletePattern{
+        QStringLiteral(
+            "^DELETE\\s+"                   // DELETE 关键字
+            "(\\w+)\\s+"                    // 表名 - 捕获组 1
+            "(?:WHERE\\s+\\(([^)]+)\\))?"   // 可选的 WHERE (...) - 捕获组 2
+            "\\s*;$"                        // 可选的空格和结尾分号
+            ),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+};
 
 class OtherCmdParser : public BaseCmdParser
 {

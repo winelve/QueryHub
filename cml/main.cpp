@@ -22,7 +22,13 @@ void test_sql() {
                     "USE test_db;",
                     // "ALTER TABLE orders ADD CONSTRAINT user_id NOT_NULL;",
                     // "ALTER TABLE orders DELETE CONSTRAINT user_id NOT_NULL;"
-                      "ALTER TABLE orders RENAME COLUMN user_id TO user_iddddddddd;"
+                    // "ALTER TABLE orders RENAME COLUMN user_iddddddddd TO user_id;"
+                    // "INSERT INTO orders (order_id,user_id,amount) VALUES (1,233,900),(2,233,666),(3,234,444);",
+                    "SELECT (*) FROM orders ORDER BY (order_id);",
+                    "INSERT INTO orders (order_id,user_id,amount) VALUES (4,255,666);",
+                    "SELECT (*) FROM orders ORDER BY (order_id);",
+                    "DELETE orders WHERE (order_id=4);",
+                    "SELECT (*) FROM orders ORDER BY (order_id);",
                    }},
     };
 
@@ -47,8 +53,6 @@ int main() {
     DataProcessor::GetInstance().Read(0);
     DataProcessor::GetInstance().CreateUser("root","123456");
     DataProcessor::GetInstance().Login("root","123456");
-
-    qDebug() << "-------------";
     test_sql();
     DataProcessor::GetInstance().Write();
 
