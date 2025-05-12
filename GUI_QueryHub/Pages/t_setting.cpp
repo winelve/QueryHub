@@ -6,7 +6,6 @@
 
 #include "ElaApplication.h"
 #include "ElaComboBox.h"
-#include "ElaLog.h"
 #include "ElaRadioButton.h"
 #include "ElaScrollPageArea.h"
 #include "ElaText.h"
@@ -65,7 +64,7 @@ T_Setting::T_Setting(QWidget* parent)
     _micaSwitchButton = new ElaToggleSwitch(this);
     ElaScrollPageArea* micaSwitchArea = new ElaScrollPageArea(this);
     QHBoxLayout* micaSwitchLayout = new QHBoxLayout(micaSwitchArea);
-    ElaText* micaSwitchText = new ElaText("启用云母效果(跨平台)", this);
+    ElaText* micaSwitchText = new ElaText("启用云母效果", this);
     micaSwitchText->setWordWrap(false);
     micaSwitchText->setTextPixelSize(15);
     micaSwitchLayout->addWidget(micaSwitchText);
@@ -75,26 +74,26 @@ T_Setting::T_Setting(QWidget* parent)
         eApp->setIsEnableMica(checked);
     });
 
-    _logSwitchButton = new ElaToggleSwitch(this);
-    ElaScrollPageArea* logSwitchArea = new ElaScrollPageArea(this);
-    QHBoxLayout* logSwitchLayout = new QHBoxLayout(logSwitchArea);
-    ElaText* logSwitchText = new ElaText("启用日志功能", this);
-    logSwitchText->setWordWrap(false);
-    logSwitchText->setTextPixelSize(15);
-    logSwitchLayout->addWidget(logSwitchText);
-    logSwitchLayout->addStretch();
-    logSwitchLayout->addWidget(_logSwitchButton);
-    connect(_logSwitchButton, &ElaToggleSwitch::toggled, this, [=](bool checked) {
-        ElaLog::getInstance()->initMessageLog(checked);
-        if (checked)
-        {
-            qDebug() << "日志已启用!";
-        }
-        else
-        {
-            qDebug() << "日志已关闭!";
-        }
-    });
+    // _logSwitchButton = new ElaToggleSwitch(this);
+    // ElaScrollPageArea* logSwitchArea = new ElaScrollPageArea(this);
+    // QHBoxLayout* logSwitchLayout = new QHBoxLayout(logSwitchArea);
+    // ElaText* logSwitchText = new ElaText("启用日志功能", this);
+    // logSwitchText->setWordWrap(false);
+    // logSwitchText->setTextPixelSize(15);
+    // logSwitchLayout->addWidget(logSwitchText);
+    // logSwitchLayout->addStretch();
+    // logSwitchLayout->addWidget(_logSwitchButton);
+    // connect(_logSwitchButton, &ElaToggleSwitch::toggled, this, [=](bool checked) {
+    //     ElaLog::getInstance()->initMessageLog(checked);
+    //     if (checked)
+    //     {
+    //         qDebug() << "日志已启用!";
+    //     }
+    //     else
+    //     {
+    //         qDebug() << "日志已关闭!";
+    //     }
+    // });
 
     _minimumButton = new ElaRadioButton("Minimum", this);
     _compactButton = new ElaRadioButton("Compact", this);
@@ -147,7 +146,7 @@ T_Setting::T_Setting(QWidget* parent)
     centerLayout->addSpacing(15);
     centerLayout->addWidget(helperText);
     centerLayout->addSpacing(10);
-    centerLayout->addWidget(logSwitchArea);
+    // centerLayout->addWidget(logSwitchArea);
     centerLayout->addWidget(micaSwitchArea);
     centerLayout->addWidget(displayModeArea);
     centerLayout->addStretch();

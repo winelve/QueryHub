@@ -15,7 +15,7 @@ public:
 private:
     ElaComboBox* _themeComboBox{nullptr};
     ElaToggleSwitch* _micaSwitchButton{nullptr};
-    ElaToggleSwitch* _logSwitchButton{nullptr};
+    // ElaToggleSwitch* _logSwitchButton{nullptr};
     ElaRadioButton* _minimumButton{nullptr};
     ElaRadioButton* _compactButton{nullptr};
     ElaRadioButton* _maximumButton{nullptr};

@@ -17,7 +17,6 @@
 #include "ElaToolBar.h"
 #include "ElaToolButton.h"
 
-#include "Pages/T_About.h"
 #include "Pages/t_setting.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -141,23 +140,23 @@ void MainWindow::initEdgeLayout(){
     toolBar->addWidget(progressBar);
 
     this->addToolBar(Qt::TopToolBarArea, toolBar);
-
-    // //状态栏
-    // ElaStatusBar* statusBar = new ElaStatusBar(this);
-    // ElaText* statusText = new ElaText("欢迎来到QueryHub！", this);
-    // statusText->setTextPixelSize(10);
-    // statusBar->addWidget(statusText);
-    // this->setStatusBar(statusBar);
 }
 
 void MainWindow::initContent(){
+    _aboutPage = new T_About();
     _settingPage = new T_Setting(this);
+    _addDataBasePage = new T_AddDataBase(this);
+    _addTablePage = new T_AddTable(this);
+    _addFieldsPage = new T_AddFields(this);
+    _delDataBasePage = new T_DeleteDataBase(this);
+    _delTablePage = new T_DeleteTable(this);
+    _delFieldsPage = new T_DeleteField(this);
+
+    //-----------------------------------------------------------------------------------
+    //0.设置界面
     addFooterNode("Setting", _settingPage, _settingKey, 0, ElaIconType::GearComplex);
-    QString fun_1;
     // 1.关于界面
     addFooterNode("About", nullptr, _aboutKey, 0, ElaIconType::User);
-    _aboutPage = new T_About();
-
     _aboutPage->hide();
     connect(this, &ElaWindow::navigationNodeClicked, this, [=](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
         if (_aboutKey == nodeKey)
@@ -167,25 +166,32 @@ void MainWindow::initContent(){
             _aboutPage->show();
         }
     });
-    // 2.数据库
-    addExpanderNode("我的连接", fun_1, ElaIconType::Link); //  层级一
+
     // 3.可视化编辑功能区
+    QString fun_1_dis;
+    QString fun_1_ddl;
+    QString fun_1_dml;
     QString fun_2_add;
     QString fun_2_del;
     QString fun_2_alt;
-    QString fun_3;
-    addExpanderNode("功能操作", fun_1, ElaIconType::BullseyeArrow); //  层级一
-    addExpanderNode("添加", fun_2_add, fun_1, ElaIconType::Plus); // 层级二
-    addExpanderNode("删除", fun_2_del, fun_1, ElaIconType::Minus);
-    // addExpanderNode("修改", fun_2_alt, fun_1, ElaIconType::Pencil);
-    addPageNode("查询", new QWidget(this), fun_1, ElaIconType::CircleLocationArrow);
-    addPageNode("添加数据库", new QWidget(this), fun_2_add, ElaIconType::Database);   // 层级三
-    addPageNode("添加表", new QWidget(this), fun_2_add, ElaIconType::Table);
-    addPageNode("添加字段", new QWidget(this), fun_2_add, ElaIconType::PenField);
-    addPageNode("添加索引", new QWidget(this), fun_2_add, ElaIconType::Tags);
-    addPageNode("删除数据库", new QWidget(this), fun_2_del, ElaIconType::Database);
-    addPageNode("删除表", new QWidget(this), fun_2_del, ElaIconType::Table);
-    addPageNode("删除字段", new QWidget(this), fun_2_del, ElaIconType::PenField);
-    addPageNode("删除索引", new QWidget(this), fun_2_del, ElaIconType::Tags);
+    //QString fun_3;
+    addExpanderNode("我的连接", fun_1_dis, ElaIconType::Link); //  层级一
+    addExpanderNode("DDL", fun_1_ddl, ElaIconType::BullseyeArrow);
+    addExpanderNode("查询", fun_1_dml, ElaIconType::CircleLocationArrow);
+    //-------------------------------------------------------------------------------------------
+    addExpanderNode("添加", fun_2_add, fun_1_ddl, ElaIconType::Plus); // 层级二
+    addExpanderNode("删除", fun_2_del, fun_1_ddl, ElaIconType::Minus);
+    addExpanderNode("修改", fun_2_alt, fun_1_ddl, ElaIconType::Pencil);
+    //--------------------------------------------------------------------------------------------
+    addPageNode("添加数据库", _addDataBasePage, fun_2_add, ElaIconType::Database);   // 层级三
+    addPageNode("添加表", _addTablePage, fun_2_add, ElaIconType::Table);
+    addPageNode("添加字段", _addFieldsPage, fun_2_add, ElaIconType::PenField);
+    // addPageNode("添加记录", new QWidget(this), fun_2_add, ElaIconType::ChartGantt);
+    // addPageNode("添加索引", new QWidget(this), fun_2_add, ElaIconType::Tags);
+    addPageNode("删除数据库", _delDataBasePage, fun_2_del, ElaIconType::Database);
+    addPageNode("删除表", _delTablePage, fun_2_del, ElaIconType::Table);
+    addPageNode("删除字段", _delFieldsPage, fun_2_del, ElaIconType::PenField);
+    // addPageNode("删除记录", new QWidget(this), fun_2_del, ElaIconType::ChartGantt);
+    // addPageNode("删除索引", new QWidget(this), fun_2_del, ElaIconType::Tags);
 
 }

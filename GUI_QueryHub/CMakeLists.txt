@@ -30,6 +30,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Pages/t_basepage.h Pages/t_basepage.cpp
         Pages/t_about.h Pages/t_about.cpp
         Pages/t_setting.h Pages/t_setting.cpp
+        Pages/t_adddatabase.h Pages/t_adddatabase.cpp
+        Pages/t_addtable.h Pages/t_addtable.cpp
+        Pages/t_deletedatabase.h Pages/t_deletedatabase.cpp
+        Pages/t_deletetable.h Pages/t_deletetable.cpp
+        Pages/t_addfields.h Pages/t_addfields.cpp
+        Pages/t_deletefield.h Pages/t_deletefield.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
