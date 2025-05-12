@@ -319,6 +319,7 @@ int Table::AlterTableConstraint(Constraint* constraint) {
     }
 
     constraints.push_back(constraint);
+
     return sSuccess;
 }
 
@@ -436,7 +437,7 @@ int Table::Select(std::vector<std::string> fieldName,
         }
     }
 
-    //return_records第一行全是字段名
+    //returnRecords第一行全是字段名
     std::vector<std::any> tmp;
     for(const auto& name: fieldName) {
         tmp.push_back(std::any(name));
@@ -469,7 +470,7 @@ int Table::Select(std::vector<std::string> fieldName,
         }
     }
 
-    // ===== Order By =====
+    // 根据某个KEY对记录进行排序
     if(orderbyKey.size() > 0) {
         std::sort(selectedIndex.begin(), selectedIndex.end(), [&](int x, int y) {
             for(const auto& key: orderbyKey) {
@@ -483,19 +484,20 @@ int Table::Select(std::vector<std::string> fieldName,
 
     // ===== 将记录索引转换成表格 =====
 
-    // 这个lambda表达式用于往return_records中加入一条记录
+    // 这个lambda表达式用于往returnRecords中加入一条记录
     auto addRecord = [&](const auto& record) {
-        std::vector<std::any> ret_record;
+        std::vector<std::any> retRecord;
         for(const auto& name: fieldName) {
             if(!record.count(name)) {
-                ret_record.push_back(std::any(sqlTool::sqlNull()));
+                retRecord.push_back(std::any(sqlTool::sqlNull()));
             } else {
-                ret_record.push_back(record.at(name));
+                retRecord.push_back(record.at(name));
             }
         }
-        returnRecords.push_back(ret_record);
+        returnRecords.push_back(retRecord);
     };
 
+    //遍历排序索引, 往里添加对应索引的记录
     for(const auto& idx: selectedIndex) {
         assert(idx < records.size());
         addRecord(records[idx]);

@@ -3,6 +3,7 @@
 
 #include "BPlusTree.h"
 #include "dataprocessor.h"
+#include <windows.h>
 #include <QDebug>
 
 void readDataFromFile() {
@@ -255,16 +256,132 @@ void testUserAuthorityPart() {
     std::cout <<  " 14" << std::endl;
 }
 
+void testDML() {
+    DataProcessor::GetInstance().Read(1);
+    DataProcessor::GetInstance().Login("root", "123456");
+    DataProcessor::GetInstance().UseDatabase("school");
+
+    // DataProcessor::GetInstance().AlterTableColumnName("teacher","zvc", "id");
+
+    //创建班级表
+    std::vector<std::pair<std::string, std::string>> fieldsOfClass = {
+        {"ClassName", "string"},
+        {"ClassNo", "string"}
+                                                               };
+    std::vector<Constraint*> constraintsOfClass;
+    constraintsOfClass.push_back(new PrimaryKeyConstraint("ClassNo", "primary_name"));
+    DataProcessor::GetInstance().CreateTable("Class", fieldsOfClass, constraintsOfClass);
+
+    //创建学生表
+    std::vector<std::pair<std::string, std::string>> fieldsOfStudent = {
+        {"Sno", "string"},
+        {"Sname", "string"},
+        {"ClassNo", "string"}
+    };
+    std::vector<Constraint*> constraintsOfStudent;
+    constraintsOfStudent.push_back(new PrimaryKeyConstraint("Sno", "primary_name"));
+    // constraintsOfStudent.push_back();
+    int ret2 = DataProcessor::GetInstance().CreateTable("student", fieldsOfStudent, constraintsOfStudent);
+    printf("Create_2:%d\n", ret2);
+    //加上外键
+    printf("Foreign_2:%d\n", DataProcessor::GetInstance().AlterTableConstraint("student", new ForeignKeyConstraint("ClassNo", "foreign_name", "Class","ClassNo")));
+
+    //INSERT
+
+    std::vector<std::pair<std::string, std::string>> recordsOfClass;
+
+    recordsOfClass.push_back(std::pair<std::string,std::string>("ClassNo", "RJ2303"));
+
+    recordsOfClass.push_back(std::pair<std::string,std::string>("ClassName", "软件2303"));
+
+    printf("Insert_5:%d\n", DataProcessor::GetInstance().Insert("Class", recordsOfClass));
+
+    std::vector<std::pair<std::string, std::string>> records;
+    // records.push_back(std::pair<std::string,std::string>("name", "fgc"));
+    records.push_back(std::pair<std::string,std::string>("Sname", "WYQ"));
+    // records.push_back(std::pair<std::string,std::string>("id", "1009"));
+    // records.push_back(std::pair<std::string,std::string>("gender", "0"));
+
+    printf("Insert_1:%d\n", DataProcessor::GetInstance().Insert("student", records));
+
+    records.push_back(std::pair<std::string,std::string>("Sno", "23301076"));
+
+    // printf("Insert_2:%d\n", DataProcessor::GetInstance().Insert("student", records));
+
+    records.push_back(std::pair<std::string,std::string>("ClassNo", "RJ2303"));
+
+    printf("Insert_3:%d\n", DataProcessor::GetInstance().Insert("student", records));
+    // std::vector<std::pair<std::string, std::string>> records;
+    // records.push_back(std::pair<std::string,std::string>("name", "fgc"));
+    // records.push_back(std::pair<std::string,std::string>("name", "ALG"));
+    // records.push_back(std::pair<std::string,std::string>("id", "1009"));
+    // records.push_back(std::pair<std::string,std::string>("gender", "0"));
+
+
+
+    // records.push_back(std::pair<std::string,std::string>("name", "dddd"));
+    // records.push_back(std::pair<std::string,std::string>("id", "1005"));
+    // records.push_back(std::pair<std::string,std::string>("gender", "0"));
+
+    // DataProcessor::GetInstance().Insert("teacher", records);
+
+    //UPDATE
+
+
+    // std::vector<std::pair<std::string, std::string>> values;
+    // records.push_back(std::pair<std::string,std::string>("name", "fgc"));
+    // records.push_back(std::pair<std::string,std::string>("id", "1001"));
+    // values.push_back(std::pair<std::string,std::string>("gender", "0"));
+
+    // std::vector<std::tuple<std::string, std::string, int>> conditions;
+    // conditions.push_back(std::tuple<std::string, std::string, int>("name", "fgc", sEqualCondition));
+    // int ret = DataProcessor::GetInstance().Update("teacher", values, conditions);
+    // printf("%d\n", ret);
+
+    //DELETE
+    std::vector<std::tuple<std::string, std::string, int>> conditions;
+    conditions.push_back(std::tuple<std::string, std::string, int>("ClassNo", "RJ2303", sEqualCondition));
+
+    // printf("Delete_1:%d\n", DataProcessor::GetInstance().Delete("student", conditions));
+    // printf("Delete_2:%d\n", DataProcessor::GetInstance().Delete("Class", conditions));
+
+    // int ret = DataProcessor::GetInstance().Delete("teacher",conditions);
+    // printf("%d\n", ret);
+
+
+    //SELECT
+
+
+    // std::vector<std::tuple<std::string, std::string, int>> conditions;
+    // conditions.push_back(std::tuple<std::string, std::string, int>("gender", "0", sEqualCondition));
+    std::vector<std::vector<std::any>> returnRecords;
+    printf("SELECT_1: %d\n",DataProcessor::GetInstance().Select(std::vector<std::string>{"student","Class"}, {"*"}, conditions, returnRecords, {"Sno"}));
+    for(const auto& row: returnRecords) {
+        for(const auto& record: row) {
+            std::cout << sqlTool::AnyToString(record) << " ";
+            // printf("%s ", (sqlTool::AnyToString(record)).c_str());
+        }
+        printf("\n");
+    }
+
+    std::any a = std::string("你好，世界");
+    std::cout << sqlTool::AnyToString(a) << std::endl;
+
+
+
+    DataProcessor::GetInstance().Write();
+}
+
 int main() {
+    //设置编码以得以输出中文
+    SetConsoleOutputCP(CP_UTF8); // 需引用#include <windows.h>
     //测试数据
 
     // writeDataToFile();
     // readDataFromFile();
 
-    testUserAuthorityPart();
-    // DataProcessor::GetInstance().Read(1);
-
-    // DataProcessor::GetInstance().ShowTables();
+    // testUserAuthorityPart();
+    // testDML();
 
 //---------B+树--------------
     // bPlusTree bPlusTree;

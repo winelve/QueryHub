@@ -45,7 +45,7 @@ void Database::SetOwnerUser(const std::string& ownerName) {
     this->ownerUser = ownerName;
 }
 
-int Database::FindTable(std::string tableName) {
+int Database:: FindTable(std::string tableName) {
     for(const auto& table : tables) {
         if(table.GetTableName() == tableName) return sSuccess;
     }
@@ -285,7 +285,11 @@ int Database::AlterTableConstraint(std::string tableName, Constraint* constraint
                 ret = AlterTableConstraint(dynamic_cast<const ForeignKeyConstraint *>(constraint)->GetReferenceTableName(),refered_constraint);
                 if(ret!=sSuccess) return ret;
             }
-            return table.AlterTableConstraint(constraint);
+
+            int ret = table.AlterTableConstraint(constraint);
+
+
+            return ret;
         }
     }
 
@@ -375,13 +379,15 @@ int Database::Select(std::vector<std::string> tablesName,
            std::vector<std::vector<std::any>> &returnRecords,
            const std::vector<std::string>& orderbyKey) {
 
-    //构造一个新表的参数
+    //参数
     std::unordered_map<std::string, std::string> fieldMap;
-    std::vector<std::vector<std::vector<std::any>>> tdRecords;
+    std::vector<std::vector<std::vector<std::any>>> tdRecords;//存储所有表的记录
     std::vector<std::tuple<std::string, std::string, int>> emptyCondition;
     std::vector<std::string> allFieldNames;
     //往其中加*然后再无条件Select获得所有字段和记录
     allFieldNames.push_back("*");
+
+    //获取全部表的记录
     for(const auto& tableName: tablesName) {
         for(auto & table: tables) {
             if(table.GetTableName() == tableName) {
@@ -409,6 +415,7 @@ int Database::Select(std::vector<std::string> tablesName,
     returnRecords.clear();
 
     allFieldNames.clear();
+    //筛选做自然连接
     //returnRecords第一行全是字段名
     std::vector<std::any> tmp;
     if(fieldsName[0] == "*") {
@@ -453,48 +460,57 @@ int Database::Select(std::vector<std::string> tablesName,
     //tmp作为自然连接字段 作为返回记录的第一行
     returnRecords.push_back(tmp);
 
+    //获取返回的记录
     std::vector<std::unordered_map<std::string, std::any>> records;
+
+    //lamaba表达式获取返回记录
     const auto& getReturnRecords = [&]() {
+        //dfs(遍历所有self做递归) 对选择的表进行笛卡尔积
         const auto& dfs = [&](auto&& self, int now, std::unordered_map<std::string, std::any> record) {
 
             if(now == sz) {
-                std::vector<std::any> return_record;
-                for(const auto& fieldName: fieldsName) {
-                    //std::cout<<"check dfs: "<<field_name<<" ";
-                    if(!record.count(fieldName)) return_record.push_back(std::any(sqlTool::sqlNull()));
-                    else return_record.push_back(record.at(fieldName));
-                }
-                //std::cout<<std::endl;
+                //遍历一遍所有笛卡尔积后取得的表的记录
+
+                //若满足条件则添加
                 if(CheckCondition(record, conditions, fieldMap) == sSuccess) {
                     records.push_back(record);
-                    //return_records.push_back(return_record);
                 }
                 return;
             }
-            const auto& inner_records = tdRecords[now];
-            //std::cout<<"checksize: "<<now<<" "<<td_records[now].size()<<std::endl;
-            std::unordered_map<std::string, std::any> new_record;
-            for(int i = 1; i < inner_records.size(); ++i) {
-                const auto& inner_record = inner_records[i];
-                new_record = record;
+
+            const auto& innerRecords = tdRecords[now];
+
+            std::unordered_map<std::string, std::any> newRecord;
+            for(int i = 1; i < innerRecords.size(); ++i) {
+                const auto& innerRecord = innerRecords[i];
+                newRecord = record;
                 bool flag = 1;
-                for(int j = 0; j < inner_record.size(); ++j){
-                    if(new_record.count(sqlTool::AnyToString(inner_records[0][j])) && sqlTool::CompareAny(inner_record[j], new_record.at(sqlTool::AnyToString(inner_records[0][j])))!= sEqual){
+                //遍历每个字段
+                for(int j = 0; j < innerRecord.size(); ++j){
+                    //若当前newRecord中有该字段且对应Value与innerRecord不相等则跳过
+                    if(newRecord.count(sqlTool::AnyToString(innerRecords[0][j])) && sqlTool::CompareAny(innerRecord[j], newRecord.at(sqlTool::AnyToString(innerRecords[0][j])))!= sEqual){
                         flag = 0;
                         break;
                     }
-                    new_record[sqlTool::AnyToString(inner_records[0][j])] = inner_record[j];
+
+                    //添加该字段(相等时无碍)
+                    newRecord[sqlTool::AnyToString(innerRecords[0][j])] = innerRecord[j];
                 }
                 if(flag == 0) continue;
-                //std::cout<<now<<" "<<i<<" "<<inner_records.size()<<std::endl;
-                self(self, now + 1, new_record);
+
+                //递归
+                self(self, now + 1, newRecord);
             }
         };
-        std::unordered_map<std::string, std::any> initial_record;
-        dfs(dfs, 0, initial_record);
+
+        //进行Dfs
+        std::unordered_map<std::string, std::any> initialRecord;
+        dfs(dfs, 0, initialRecord);
     };
 
     getReturnRecords();
+
+    //对返回记录根据key进行排序
 
     if(orderbyKey.size() > 0) {
 
@@ -508,19 +524,21 @@ int Database::Select(std::vector<std::string> tablesName,
             return false;
         });
     }
+
+
     for(const auto& record : records) {
-        std::vector<std::any> return_record;
+        std::vector<std::any> returnRecord;
         for(const auto& fieldName: fieldsName) {
             //std::cout<<"check dfs: "<<field_name<<" ";
-            if(!record.count(fieldName)) return_record.push_back(std::any(sqlTool::sqlNull()));
-            else return_record.push_back(record.at(fieldName));
+            if(!record.count(fieldName)) returnRecord.push_back(std::any(sqlTool::sqlNull()));
+            else returnRecord.push_back(record.at(fieldName));
         }
-        return_record.push_back(return_record);
+        returnRecords.push_back(returnRecord);
     }
 
     return sSuccess;
 
-    return sTableNotFound;
+    // return sTableNotFound;
 }
 
 //插入记录

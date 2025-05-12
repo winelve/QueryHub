@@ -29,9 +29,9 @@ const int sUserNameNotFound = 16;
 const int sUserPasswordError = 17;
 
 //CONST
-const int sEqual =  30;
-const int sLess =  31;
-const int sLarger =  32;
+const int sEqual =  0;
+const int sLess =  -1;
+const int sLarger =  1;
 const int sNotSameType = 33;
 const int sDataTypeWrong = 34;
 //TABLE
