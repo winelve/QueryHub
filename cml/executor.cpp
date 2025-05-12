@@ -68,6 +68,7 @@ QJsonObject Executor::find_params(const QString& cmd,const QString& op,const QSt
             if(cmd_js["cmd"]==cmd) {
                 QJsonObject obj_js = cmd_js[op].toObject();
                 QJsonObject params_js = obj_js[objetc].toObject();
+                qDebug() << "object:------ " + objetc;
                 params_js["status"] = "ok";
                 return params_js;
             }

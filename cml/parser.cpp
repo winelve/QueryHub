@@ -22,11 +22,14 @@ QJsonObject Parser::parse_sql(const QString &_sql){
         return ast_root;
     }
 
+    //注册:
     QMap<QString,BaseCmdParser*> cmd_parsers = {
         {"create",&create_parser},
         {"alter",&alter_parser},
         {"drop",&drop_parser},
-        {"use",&other_parser}
+        {"use",&other_parser},
+        {"show",&other_parser},
+        {"desc",&other_parser}
     };
 
     auto it = cmd_parsers.find(first_keyword);
@@ -52,7 +55,6 @@ QJsonObject Parser::parse_sql(const QString &_sql){
 
     return ast_root;
 }
-
 
 QString Parser::parse_first_word_(const QString &sql) {
     static const QRegularExpression stateTypePattern{QStringLiteral("^\\s*(\\w+)\\b"),QRegularExpression::CaseInsensitiveOption};

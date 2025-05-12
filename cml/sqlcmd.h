@@ -23,15 +23,16 @@ public :
         "ALTER TABLE users DROP email CHAR;",
         "ALTER TABLE users DROP email;",
         "ALTER TABLE users RENAME TO user;",
+        "ALTER TABLE users ADD CONSTRAINT name PRIMARY_KEY(id);",
+        "ALTER TABLE users DELETE CONSTRAINT name PRIMARY_KEY;"
     };
 private:
     const QRegularExpression alterDbRenamePattern{
         QStringLiteral("^ALTER\\s+DATABASE\\s+(\\w+)\\s+RENAME\\s+TO\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression alterTableAddPattern{
-        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+ADD\\s+(\\w+)\\s+(\\w+)\\s*((?:\\s+\\w+(?:\\([^)]*\\))?)*?)\\s*;"),
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+ADD\\s+(?!CONSTRAINT\\s+)(\\w+)\\s+(\\w+)\\s*((?:\\s+\\w+(?:\\([^)]*\\))?)*?)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
 
@@ -39,28 +40,36 @@ private:
         QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+MODIFY\\s+(\\w+)\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression alterTableRenameColumnPattern{
         QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+RENAME\\s+COLUMN\\s+(\\w+)\\s+TO\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression alterTableDropPattern{
         QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+DROP\\s+(\\w+)\\s*(\\w+)?\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression alterTableRenamePattern{
         QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+RENAME\\s+TO\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression constraintPattern{
         QStringLiteral("\\b(\\w+)(?:\\(([^)]+)\\))?"),
         QRegularExpression::CaseInsensitiveOption
     };
 
+    // 新增：Add Constraint 模式
+    const QRegularExpression alterTableAddConstraintPattern{
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+ADD\\s+CONSTRAINT\\s+(\\w+)\\s+(\\w+)(?:\\(([^)]+)\\))?\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    // 新增：Delete Constraint 模式
+    const QRegularExpression alterTableDeleteConstraintPattern{
+        QStringLiteral("^ALTER\\s+TABLE\\s+(\\w+)\\s+DELETE\\s+CONSTRAINT\\s+(\\w+)\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
 };
+
 //---------------
 class CreateParser:public BaseCmdParser
 {
@@ -145,7 +154,7 @@ private:
     };
 
     const QRegularExpression describeTablePattern{
-        QStringLiteral("^DESCRIBE\\s+(\\w+)\\s*;"),
+        QStringLiteral("^DESC\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
 };
