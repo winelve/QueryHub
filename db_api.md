@@ -23,7 +23,7 @@
 
 ## 表DML操作
 
-- [ ]  int Select(std::string tableName,
+- [x]  int Select(std::string tableName,
                  std::vector<std::string> fieldName,
                  std::vector<std::tuple<std::string, std::string, int>> conditions,
                  std::vector<std::vector<std::any>> &returnRecords,
@@ -33,9 +33,9 @@
                  std::vector<std::tuple<std::string, std::string, int>> conditions,
                  std::vector<std::vector<std::any>> &returnRecords,
                  const std::vector<std::string>& orderbyKey = std::vector<std::string>());   //多表查询
-- [ ] Insert(const std::string& tableName, const std::vector<std::pair<std::string, std::string>>& records): 插入记录
-- [ ] Update(const std::string& tableName, const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions): 更新(修改)记录
-- [ ] Delete(const std::string& tableName, const std::vector<std::tuple<std::string, std::string, int>>& conditions): 删除记录
+- [x] Insert(const std::string& tableName, const std::vector<std::pair<std::string, std::string>>& records): 插入记录
+- [x] Update(const std::string& tableName, const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions): 更新(修改)记录
+- [x] Delete(const std::string& tableName, const std::vector<std::tuple<std::string, std::string, int>>& conditions): 删除记录
 - [ ] Index(): 索引
 
 ## 文件操作

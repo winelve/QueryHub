@@ -2,7 +2,6 @@
 
 ```json
 -- base
-
 {
     "status": "ok|error",
     "CMD":"CREARE|DROP|ALTER",
@@ -13,7 +12,7 @@
     "error_log":""
 }
 
-
+//--------------DDL--------------
 -- create:
 {
     "data":{
@@ -257,8 +256,84 @@ foregin_key(reference_tb,reference_column)
     }
 }
 
+//--------------DML--------------
+
+// Insert
+// INSERT INTO table_name (column1,column2,column3) VALUES (v11,v12,v13),(v21,v22,v23); 
+{
+    "cmd": "insert",
+    "data": {
+        "op":"insert",
+        "object": "table",
+        "tb_name":"tb_name",
+        "columns": [],
+        "values":[]
+    }
+}
 
 
+//SELECT
+//SELECT (c1,c2,c3,c4|*) FROM tb1 WHERE (c1>10 AND c2<100) JOIN (tb2,tb3) ORDERED BY (c1,c2...);
+
+{
+    "cmd":"select",
+    "data": {
+        "op":"select",
+        "object": "table",
+        "tables": ["tb_name"],
+        "select_columns":[],
+        "order_by":[],
+        "where":[
+            {
+                "left":"l",
+                "right":"r",
+                "condition":"c"
+            }
+        ]
+    }
+}
+
+//UPDATE
+//UPDATE tb_name SET (c1=v1,c2=v2,c3=v3) WHERE (c1>10 AND c2<100);
+{
+    "cmd":"update",
+    "data": {
+        "op":"update",
+        "object": "table",
+        "tb_name": "name",
+        "set_values": [
+            {
+                "cname":"cname",
+                "values":"value"
+            }
+        ],
+        "where":[
+            {
+                "left":"l",
+                "right":"r",
+                "condition":"c"
+            }
+        ]
+    }
+}
+
+//DELETE
+//DELETE tb_name WHERE (c1<10 AND c2>100)
+{
+    "cmd": "delete",
+    "data": {
+        "op": "delete",
+        "object": "table",
+        "tb_name": "name",
+        "where":[
+            {
+                "left":"l",
+                "right":"r",
+                "condition":"c"
+            }
+        ]
+    }
+}
 
 
 
@@ -386,9 +461,53 @@ foregin_key(reference_tb,reference_column)
             }
         },
         
+        {
+            "cmd":"insert",
+            "insert": {
+                "table": {
+                    "func":["insert"],
+                    "keys":["tb_name","columns","values"]
+                }
+            }
+        },
         
+        {
+            "cmd": "select",
+            "select": {
+                "table":{
+                    "func":["Select"],
+                    "keys":["tables","select_columns","where","order_by"]
+                }
+            }
+        },
+        
+        {
+            "cmd":"update",
+            "update": {
+                "table":{
+                    "func":["Update"],
+                    "keys":["tb_name","set_values","where"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "delete",
+            "delete": {
+                "table": {
+                    "func":["Delete"],
+                    "keys":["tb_name","where"]
+                }
+                
+            }
+            
+            
+        }
 
     ]
 }
+
+
+
 ```
 

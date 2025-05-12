@@ -110,7 +110,49 @@
                     "keys":["name"]
                 }
             }
+        },
+
+        {
+            "cmd":"insert",
+            "insert": {
+                "table": {
+                    "func":["Insert"],
+                    "keys":["tb_name","columns","values"]
+                }
+            }
+        },
+
+        {
+            "cmd": "select",
+            "select": {
+                "table":{
+                    "func":["Select"],
+                    "keys":["tables","select_columns","where","order_by"]
+                }
+            }
+        },
+
+        {
+            "cmd":"update",
+            "update": {
+                "table":{
+                    "func":["Update"],
+                    "keys":["tb_name","set_values","where"]
+                }
+            }
+        },
+
+        {
+            "cmd": "delete",
+            "delete": {
+                "table": {
+                    "func":["Delete"],
+                    "keys":["tb_name","where"]
+                }
+                
+            }
         }
+
 
     ]
 }

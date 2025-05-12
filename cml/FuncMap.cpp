@@ -212,14 +212,134 @@ void FuncMap::setup() {
         return db.AlterTableDeleteConstraint(tb_name.toStdString(),constraint_name.toStdString());
     };
 
+    /*
+     * ---------DML---------
+    */
+    func_map_["Insert"] = [this](const QVariantList &params) -> int {
+        QString tb_name = params[0].toString();
+        QJsonArray column_array = params[1].toJsonArray();
+        QJsonArray values_array = params[2].toJsonArray();
+
+        //构造records
+        int res = 0;
+        for(int i=0;i<values_array.size();i++) {
+            std::vector<std::pair<std::string,std::string>> records;
+            for(int j=0;j<column_array.size();j++) {
+                QString c_j = column_array[j].toString();
+                QString v_ij = values_array[i][j].toString();
+                records.push_back(std::pair<std::string,std::string>(c_j.toStdString(),v_ij.toStdString()));
+            }
+            res = std::max(res,db.Insert(tb_name.toStdString(),records));
+        }
+        return res;
+    };
+
+    func_map_["Select"] = [this](const QVariantList &params) -> int {
+
+        QJsonArray tables = params[0].toJsonArray();
+        QJsonArray select_columns = params[1].toJsonArray();
+        QJsonArray where = params[2].toJsonArray();
+        QJsonArray ordered_by = params[3].toJsonArray();
+
+        std::vector<std::string> tableName;
+        std::vector<std::string> fieldName;
+        std::vector<std::tuple<std::string, std::string, int>> conditions;
+        std::vector<std::string> orderbyKey;
+
+        std::vector<std::vector<std::any>> returnRecords;
+
+        for(const auto& t: tables) {
+            tableName.push_back(t.toString().toStdString());
+        }
+
+        //组织字段
+        for(const auto& c: select_columns) {
+            fieldName.push_back(c.toString().toStdString());
+        }
+        //组织条件
+        for(const auto& c: where) {
+            QJsonObject cond = c.toObject();
+            QString l = cond["left"].toString();
+            QString r = cond["right"].toString();
+            QString op = cond["condition"].toString();
+            conditions.push_back(std::make_tuple(l.toStdString(), r.toStdString(), map_operator(op)));
+        }
+        //组织order by
+        for(const auto& c: ordered_by) {
+            QString column = c.toString();
+            orderbyKey.push_back(column.toStdString());
+        }
+
+        int res = 0;
+        if(tableName.size()==1) {
+            res = db.Select(tableName[0],
+                            fieldName,
+                            conditions,
+                            returnRecords,
+                            orderbyKey);
+        } else if(tableName.size()>1) {
+            res = db.Select(tableName,
+                            fieldName,
+                            conditions,
+                            returnRecords,
+                            orderbyKey);
+        }
+
+        PrintSelectRes(returnRecords);
+        return res;
+    };
+
+    func_map_["Update"] = [this](const QVariantList &params) -> int {
+        QString tb_name = params[0].toString();
+        QJsonArray set_values = params[1].toJsonArray();
+        QJsonArray where = params[2].toJsonArray();
+
+        std::string tableName = tb_name.toStdString();
+        std::vector<std::pair<std::string,std::string>> values;
+        std::vector<std::tuple<std::string,std::string,int>> conditions;
+
+        //组织column和对应的值
+        for(const auto& v:set_values) {
+            QJsonObject val = v.toObject();
+            QString cname = val["cname"].toString();
+            QString val_str = val["values"].toString();
+            values.push_back(std::pair<std::string,std::string>(cname.toStdString(),val_str.toStdString()));
+        }
+
+        //组织条件
+        for(const auto& c: where) {
+            QJsonObject cond = c.toObject();
+            QString l = cond["left"].toString();
+            QString r = cond["right"].toString();
+            QString op = cond["condition"].toString();
+            conditions.push_back(std::make_tuple(l.toStdString(), r.toStdString(), map_operator(op)));
+        }
+
+        return db.Update(tableName,values,conditions);
+    };
+
+    func_map_["Delete"] = [this](const QVariantList &params) -> int {
+        QString tb_name = params[0].toString();
+        QJsonArray where = params[1].toJsonArray();
+
+        std::string tableName = tb_name.toStdString();
+        std::vector<std::tuple<std::string,std::string,int>> conditions;
+
+        //组织条件
+        for(const auto& c: where) {
+            QJsonObject cond = c.toObject();
+            QString l = cond["left"].toString();
+            QString r = cond["right"].toString();
+            QString op = cond["condition"].toString();
+            conditions.push_back(std::make_tuple(l.toStdString(), r.toStdString(), map_operator(op)));
+        }
+        return db.Delete(tableName,conditions);
+    };
 
     // -----模版-----
     // func_map_[""] = [this](const QVariantList &params) -> int {
     //     return -1;
     // };
-
-
-
 }
 
 
