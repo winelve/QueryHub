@@ -1,9 +1,5 @@
 #include "mainwindow.h"
 
-#include <QDebug>
-#include <QGraphicsView>
-#include <QHBoxLayout>
-
 #include "ElaContentDialog.h"
 #include "ElaDockWidget.h"
 #include "ElaEventBus.h"
@@ -25,7 +21,6 @@ MainWindow::MainWindow(QWidget* parent)
     : ElaWindow(parent)
 {
     initWindow();
-
     //额外布局
     initEdgeLayout();
 
@@ -61,10 +56,10 @@ void MainWindow::initEdgeLayout(){
     toolBar->setIconSize(QSize(25, 25));
     // toolBar->setFloatable(false);
     // toolBar->setMovable(false);
-    ElaToolButton* toolButton1 = new ElaToolButton(this);
-    toolButton1->setElaIcon(ElaIconType::Link);
-    toolBar->addWidget(toolButton1);
-    connect(toolButton1, &ElaToolButton::clicked, this, &MainWindow::onToolButton1Clicked);
+    ElaToolButton* link_btn = new ElaToolButton(this);
+    link_btn->setElaIcon(ElaIconType::Link);
+    toolBar->addWidget(link_btn);
+    connect(link_btn, &ElaToolButton::clicked, this, &MainWindow::click_link_btn);
     //---------------------------------------------------------
     ElaToolButton* toolButton2 = new ElaToolButton(this);
     toolButton2->setElaIcon(ElaIconType::ChartUser);
@@ -123,6 +118,7 @@ void MainWindow::initContent(){
     _delDataBasePage = new T_DeleteDataBase(this);
     _delTablePage = new T_DeleteTable(this);
     _delFieldsPage = new T_DeleteField(this);
+    _tabWidget = new ElaTabWidget(this);
 
     //-----------------------------------------------------------------------------------
     //0.设置界面
@@ -148,7 +144,7 @@ void MainWindow::initContent(){
     QString fun_2_alt;
     //QString fun_3;
 
-    addExpanderNode("DDL", fun_1_ddl, ElaIconType::BullseyeArrow);
+    addExpanderNode("功能操作", fun_1_ddl, ElaIconType::BullseyeArrow);
     addExpanderNode("查询", fun_1_dml, ElaIconType::CircleLocationArrow);
     //-------------------------------------------------------------------------------------------
     addExpanderNode("添加", fun_2_add, fun_1_ddl, ElaIconType::Plus); // 层级二
@@ -168,19 +164,267 @@ void MainWindow::initContent(){
 
 }
 
-void MainWindow::onToolButton1Clicked() {
-    //停靠窗口
-    ElaDockWidget* connectWidget = new ElaDockWidget("新建连接", this);
-    T_ConnectPage *_connectPage = new T_ConnectPage(this);
-    connectWidget->setWidget(_connectPage);
-    this->addDockWidget(Qt::RightDockWidgetArea, connectWidget);
-    resizeDocks({connectWidget}, {200}, Qt::Horizontal);
-    if ( _connectPage->setlink_status()) {
-        QString linkname = _connectPage->setlinks();
-        QString fun1;
-        addExpanderNode(linkname, fun1, ElaIconType::Link); //  层级一
-    }/*else{
-        ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", "创建连接失败!", 2500, this);
-    }*/
+// void MainWindow::click_link_btn() {
+//     // 连接窗口
+//     ElaDockWidget* connectWidget = new ElaDockWidget("新建连接", this);
+//     T_ConnectPage *_connectPage = new T_ConnectPage(this);
+//     connectWidget->setWidget(_connectPage);
+//     this->addDockWidget(Qt::RightDockWidgetArea, connectWidget);
+//     resizeDocks({connectWidget}, {200}, Qt::Horizontal);
+//     connect(_connectPage, &T_ConnectPage::connectionCreated, this, [this](const QString& name) {
+//         QString linkKey = "link" + name;
+//         addExpanderNode(name, linkKey, ElaIconType::Link);
+//         _connectionNames.append(name); // 保存连接名
+//     });
 
+// }
+
+// // -连接（ExpanderNode可展开节点） -数据库（PageNode页面节点） -表（ExpanderNode最深层，无法再展开，调用dis_table（）这个放到T_TableView里面）
+// void MainWindow::init_treeview(const QString linkkey)
+// {
+//     // 获取数据库列表
+//     std::vector<std::string> databases;
+//     int ret = DataProcessor::GetInstance().ShowDatabases(databases);
+//     if (ret != 0) {
+//         ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法加载数据库列表！", 3000);
+//         return;
+//     }
+
+//     // 遍历数据库
+//     for (const auto& db : databases) {
+//         QString dbKey;
+
+//         // 添加数据库节点
+//         addExpanderNode(QString::fromStdString(db) ,dbKey, ElaIconType::Database);
+
+//         // 切换到该数据库
+//         ret = DataProcessor::GetInstance().UseDatabase(db);
+//         if (ret != 0) {
+//             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法使用数据库 %1").arg(QString::fromStdString(db)), 3000);
+//             continue;
+//         }
+
+//         // 获取表列表
+//         std::vector<std::string> tables;
+//         ret = DataProcessor::GetInstance().ShowTables(tables);
+//         if (ret != 0) {
+//             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法加载数据库 %1 的表").arg(QString::fromStdString(db)), 3000);
+//             continue;
+//         }
+
+//         _tableview = new T_TableView(this);
+//         // 添加表节点（子节点）
+//         for (const auto& tb : tables) {
+//             QString tbName = QString::fromStdString(tb);
+//             addPageNode(tbName, _tableview,dbKey, ElaIconType::Table);
+//         }
+//     }
+// }
+
+// 假设 DataProcessor 接口
+class DataProcessor {
+public:
+    static DataProcessor& GetInstance() { static DataProcessor instance; return instance; }
+    int ShowDatabases(std::vector<std::string>& databases) {
+        databases = {"db1", "db2"}; // 替换为实际接口
+        return 0;
+    }
+    int ShowTables(std::vector<std::string>& tables) {
+        tables = {"tb1", "tb2"}; // 替换为实际接口
+        return 0;
+    }
+    int UseDatabase(const std::string& database) {
+        return 0; // 替换为实际接口
+    }
+    int Select(const std::string& table, const std::vector<std::string>& fields,
+               const std::vector<std::tuple<std::string, std::string, int>>& conditions,
+               std::vector<std::vector<std::string>>& records) {
+        records = {{"c1", "c2", "c3", "c4"}, {"v11", "v12", "v13", "v14"}, {"v21", "v22", "v23", "v24"}};
+        return 0; // 替换为实际接口
+    }
+};
+
+// void MainWindow::init_treeview(const QString& linkkey)
+// {
+//     qDebug() << "Initializing tree view for connection:" << linkkey;
+
+//     // 获取数据库列表
+//     std::vector<std::string> databases;
+//     int ret = DataProcessor::GetInstance().ShowDatabases(databases);
+//     if (ret != 0) {
+//         qDebug() << "Error loading databases, error code:" << ret;
+//         ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法加载数据库列表！", 3000);
+//         return;
+//     }
+
+//     // 遍历数据库
+//     for (const auto& db : databases) {
+//         QString dbKey;
+//         // 添加数据库节点（ExpanderNode）
+//         addExpanderNode(QString::fromStdString(db), dbKey, linkkey, ElaIconType::Database);
+//         qDebug() << "Added database node:" << db << ", key:" << dbKey;
+
+//         // 切换到该数据库
+//         ret = DataProcessor::GetInstance().UseDatabase(db);
+//         if (ret != 0) {
+//             qDebug() << "Error using database:" << db << ", error code:" << ret;
+//             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法使用数据库 %1").arg(QString::fromStdString(db)), 3000);
+//             continue;
+//         }
+
+//         // 获取表列表
+//         std::vector<std::string> tables;
+//         ret = DataProcessor::GetInstance().ShowTables(tables);
+//         if (ret != 0) {
+//             qDebug() << "Error loading tables for database:" << db << ", error code:" << ret;
+//             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法加载数据库 %1 的表").arg(QString::fromStdString(db)), 3000);
+//             continue;
+//         }
+
+//         // 添加表节点（PageNode）
+//         for (const auto& tb : tables) {
+//             QString tbName = QString::fromStdString(tb);
+//             QString tbKey;
+//             // 使用 PageNode，不关联 QWidget
+//             T_TableView* tableView = new T_TableView(QString::fromStdString(db),QString::fromStdString(tb), this);
+//             addPageNode(tbName, tableView, dbKey, ElaIconType::Table);
+//             tableView->dis_table(tableData);
+//             // 保存节点信息（tbName 作为 nodeKey）
+//             _nodeMap[tbName] = {QString::fromStdString(db), tbName};
+//             qDebug() << "Added table node:" << tbName << " under database:" << db;
+//         }
+//     }
+
+//     // 连接 navigationNodeClicked 信号
+//     connect(this, &MainWindow::navigationNodeClicked, this, &MainWindow::onNavigationNodeClicked);
+//     qDebug() << "navigationNodeClicked signal connected";
+// }
+void MainWindow::init_treeview(const QString& linkkey)
+{
+    qDebug() << "Initializing tree view for connection:" << linkkey;
+
+    // 获取数据库列表
+    std::vector<std::string> databases;
+    int ret = DataProcessor::GetInstance().ShowDatabases(databases);
+    if (ret != 0) {
+        qDebug() << "Error loading databases, error code:" << ret;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法加载数据库列表！", 3000);
+        return;
+    }
+
+    // 遍历数据库
+    for (const auto& db : databases) {
+        QString dbKey;
+        // 添加数据库节点（ExpanderNode）
+        addExpanderNode(QString::fromStdString(db), dbKey, linkkey, ElaIconType::Database);
+        qDebug() << "Added database node:" << db << ", key:" << dbKey;
+
+        // 切换到该数据库
+        ret = DataProcessor::GetInstance().UseDatabase(db);
+        if (ret != 0) {
+            qDebug() << "Error using database:" << db << ", error code:" << ret;
+            ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法使用数据库 %1").arg(QString::fromStdString(db)), 3000);
+            continue;
+        }
+
+        // 获取表列表
+        std::vector<std::string> tables;
+        ret = DataProcessor::GetInstance().ShowTables(tables);
+        if (ret != 0) {
+            qDebug() << "Error loading tables for database:" << db << ", error code:" << ret;
+            ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法加载数据库 %1 的表").arg(QString::fromStdString(db)), 3000);
+            continue;
+        }
+
+        // 添加表节点（PageNode）
+        for (const auto& tb : tables) {
+            QString tbName = QString::fromStdString(tb);
+            QString tbKey = tbName + "_" + dbKey; // Create a unique key, e.g., "tb1_db1"
+            // Use a placeholder QWidget or nullptr for navigation
+            addPageNode(tbName, new QWidget(), dbKey, ElaIconType::Table);
+            // Save node information with tbKey
+            _nodeMap[tbKey] = {QString::fromStdString(db), tbName};
+            qDebug() << "Added table node:" << tbName << " with nodeKey:" << tbKey << " under database:" << db;
+        }
+    }
+
+    // 连接 navigationNodeClicked 信号
+    connect(this, &MainWindow::navigationNodeClicked, this, [this](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
+        onNavigationNodeClicked(nodeType, nodeKey);
+    });
+    qDebug() << "navigationNodeClicked signal connected";
+}
+void MainWindow::click_link_btn()
+{
+    ElaDockWidget* connectWidget = new ElaDockWidget("新建连接", this);
+    T_ConnectPage* _connectPage = new T_ConnectPage(this);
+    connectWidget->setWidget(_connectPage);
+    addDockWidget(Qt::RightDockWidgetArea, connectWidget);
+    resizeDocks({connectWidget}, {200}, Qt::Horizontal);
+    connect(_connectPage, &T_ConnectPage::connectionCreated, this, [this](const QString& name) {
+        QString linkKey;
+        addExpanderNode(name, linkKey, ElaIconType::Link);
+        _connectionNames.append(name);
+        init_treeview(linkKey); // 初始化树状结构
+        qDebug() << "Connection created:" << name << ", linkKey:" << linkKey;
+    });
+}
+
+void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey)
+{
+    qDebug() << "onNavigationNodeClicked called, nodeType:" << static_cast<int>(nodeType) << ", nodeKey:" << nodeKey;
+
+    if (nodeType != ElaNavigationType::PageNode) {
+        qDebug() << "Ignored non-PageNode click:" << nodeKey;
+        return;
+    }
+
+    qDebug() << "Checking node in _nodeMap, keys:" << _nodeMap.keys();
+    if (!_nodeMap.contains(nodeKey)) {
+        qDebug() << "Unknown node:" << nodeKey;
+        return;
+    }
+
+    QString database = _nodeMap[nodeKey].first;
+    QString table = _nodeMap[nodeKey].second;
+    qDebug() << "Matched node, database:" << database << ", table:" << table;
+
+    // 检查是否已打开
+    for (int i = 0; i < _tabWidget->count(); ++i) {
+        qDebug() << "Checking tab" << i << ", text:" << _tabWidget->tabText(i);
+        if (_tabWidget->tabText(i) == table) {
+            _tabWidget->setCurrentIndex(i);
+            ElaMessageBar::information(ElaMessageBarType::TopRight, "提示", QString("表 %1 已打开").arg(table), 2000);
+            qDebug() << "Table" << table << "already opened, switched to index" << i;
+            return;
+        }
+    }
+
+    // 切换数据库
+    int ret = DataProcessor::GetInstance().UseDatabase(database.toStdString());
+    if (ret != 0) {
+        qDebug() << "Error using database:" << database << ", error code:" << ret;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "使用数据库错误", 3000);
+        return;
+    }
+
+    // 查询数据
+    std::vector<std::vector<std::string>> tableData;
+    ret = DataProcessor::GetInstance().Select(table.toStdString(), {"*"}, {}, tableData);
+    if (ret != 0) {
+        qDebug() << "Error selecting table:" << table << ", error code:" << ret;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "查询表错误", 3000);
+        return;
+    }
+
+    // 创建 T_TableView 并显示
+    T_TableView* tableView = new T_TableView(database, table, this);
+    tableView->dis_table(tableData);
+
+    int index = _tabWidget->addTab(tableView, table);
+    _tabWidget->setCurrentIndex(index);
+    qDebug() << "Added tab for table:" << table << "at index" << index;
+
+    ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", QString("表 %1 已打开").arg(table), 2000);
+    qDebug() << "Table opened:" << table;
 }

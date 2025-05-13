@@ -13,10 +13,6 @@ class T_ConnectPage : public QWidget
     Q_OBJECT
 public:
     explicit T_ConnectPage(QWidget *parent = nullptr);
-    QString setlinks();
-    bool setlink_status(){
-        return link_status;
-    }
 
 signals:
     void connectionCreated(const QString& connectionName);

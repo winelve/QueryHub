@@ -118,9 +118,12 @@ void T_ConnectPage::initConnections()
             ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", "密码不能为空!", 2500, this);
             return;
         }
+
+        //这里可以修改连接成功的判断条件----------------------------------------------------------------------------------------
         if(!connectionName.isEmpty()&&!host.isEmpty()&&!port.isEmpty()&&!username.isEmpty()
             &&!password.isEmpty()){
-            link_status  = true;
+            link_status = true;
+            emit connectionCreated(connectionName);
             ElaMessageBar::success(ElaMessageBarType::Bottom, "成功", "创建连接成功!", 2500, this);
         }
     });
@@ -133,9 +136,4 @@ void T_ConnectPage::initConnections()
         m_usernameEdit->clear();
         m_passwordEdit->clear();
     });
-}
-
-QString T_ConnectPage::setlinks()
-{
-    return m_connectionNameEdit->text();
 }

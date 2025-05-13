@@ -38,6 +38,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Pages/t_deletefield.h Pages/t_deletefield.cpp
         IDBMSInterface.h
         Pages/t_connectpage.h Pages/t_connectpage.cpp
+        Pages/t_tableview.h Pages/t_tableview.cpp
+        modle/t_tableviewmodel.h modle/t_tableviewmodel.cpp
 
 
 
