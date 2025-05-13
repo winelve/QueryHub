@@ -28,3 +28,11 @@ target_include_directories(cml PUBLIC ${CORE_INCLUDE_DIRS})
 target_link_libraries(cml PUBLIC Qt6::Core)
 # 如果core是另一个Target，还需要链接core库
 target_link_libraries(cml PUBLIC core)
+
+# Windows 平台特定设置
+if(WIN32)
+    # 链接 Winsock 库
+    target_link_libraries(cml PUBLIC ws2_32)
+endif()
+
+

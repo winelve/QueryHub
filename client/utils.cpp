@@ -136,19 +136,105 @@ void PrintSelectRes(const std::vector<std::vector<std::any>>& returnRecords) {
 }
 
 
-QJsonDocument makeJsDocument(const QString& code,const QString& func,const QJsonArray& data) {
-    QJsonObject send_data;
-    send_data["code"] = code;
-    send_data["func"] = func;
-    send_data["data"] = data;
-    return QJsonDocument(send_data);
-}
 
-QJsonDocument makeJsDocument(const int code,const QString& func,const QJsonArray& data) {
-    QJsonObject send_data;
-    send_data["code"] = QString::number(code);
-    send_data["func"] = func;
-    send_data["data"] = data;
-    return QJsonDocument(send_data);
-}
+void PrintJsonSelectRes(const QJsonArray& data) {
+    if (data.isEmpty()) {
+        qDebug() << "No records found.";
+        return;
+    }
 
+    // 获取字段名称（第一行）
+    QJsonArray headers = data[0].toArray();
+    int columnCount = headers.size();
+
+    // 计算每列的最大宽度
+    std::vector<size_t> columnWidths(columnCount, 0);
+    for (int col = 0; col < columnCount; ++col) {
+        // 初始化列宽为字段名长度
+        columnWidths[col] = headers[col].toString().length();
+    }
+
+    // 计算数据列的最大宽度
+    for (int row = 1; row < data.size(); ++row) {
+        QJsonArray rowData = data[row].toArray();
+        for (int col = 0; col < columnCount && col < rowData.size(); ++col) {
+            // 将QJsonValue转换为字符串，无论其类型是什么
+            QString cellValue;
+            QJsonValue val = rowData[col];
+            if (val.isDouble()) {
+                cellValue = QString::number(val.toDouble());
+            } else if (val.isString()) {
+                cellValue = val.toString();
+            } else if (val.isBool()) {
+                cellValue = val.toBool() ? "true" : "false";
+            } else if (val.isNull()) {
+                cellValue = "NULL";
+            } else if (val.isUndefined()) {
+                cellValue = "undefined";
+            } else {
+                // 对于其他类型（包括整数），使用QJsonValue::toString()
+                cellValue = val.toString();
+            }
+
+            size_t currentWidth = cellValue.length();
+            columnWidths[col] = std::max(columnWidths[col], currentWidth);
+        }
+    }
+
+    // 准备输出字符串
+    QString outputStr;
+    QTextStream out(&outputStr);
+
+    // 输出分隔线
+    auto printSeparator = [&]() {
+        for (size_t width : columnWidths) {
+            out << "+" << QString(width + 2, '-');
+        }
+        out << "+" << Qt::endl;
+    };
+
+    // 打印表头
+    printSeparator();
+    out << "|";
+    for (int col = 0; col < columnCount; ++col) {
+        QString header = headers[col].toString();
+        out << " " << QString("%1").arg(header, -static_cast<int>(columnWidths[col])) << " |";
+    }
+    out << Qt::endl;
+    printSeparator();
+
+    // 打印数据行
+    for (int row = 1; row < data.size(); ++row) {
+        QJsonArray rowData = data[row].toArray();
+        out << "|";
+        for (int col = 0; col < columnCount && col < rowData.size(); ++col) {
+            // 将QJsonValue转换为字符串，无论其类型是什么
+            QString cellValue;
+            QJsonValue val = rowData[col];
+            if (val.isDouble()) {
+                cellValue = QString::number(val.toDouble());
+            } else if (val.isString()) {
+                cellValue = val.toString();
+            } else if (val.isBool()) {
+                cellValue = val.toBool() ? "true" : "false";
+            } else if (val.isNull()) {
+                cellValue = "NULL";
+            } else if (val.isUndefined()) {
+                cellValue = "undefined";
+            } else {
+                // 对于其他类型（包括整数），使用QJsonValue::toString()
+                cellValue = val.toString();
+            }
+
+            out << " " << QString("%1").arg(cellValue, -static_cast<int>(columnWidths[col])) << " |";
+        }
+        out << Qt::endl;
+    }
+    printSeparator();
+
+    // 打印总记录数
+    out << "Total " << (data.size() - 1) << " record(s)" << Qt::endl;
+
+    // 使用 qDebug() 输出
+    qDebug().noquote() << outputStr;
+}

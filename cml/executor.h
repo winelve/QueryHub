@@ -13,7 +13,7 @@ class Executor
 {
 public:
     Executor();
-    int execute_ast(const QJsonObject& ast_root);
+    int execute_ast(const QJsonObject& ast_root,QJsonDocument& returnData);
 
 private:
     FuncMap func_map_;

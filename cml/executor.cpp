@@ -6,7 +6,7 @@ Executor::Executor() {
 }
 
 
-int Executor::execute_ast(const QJsonObject& ast_root) {
+int Executor::execute_ast(const QJsonObject& ast_root,QJsonDocument& returnData) {
 
     QString status = ast_root["status"].toString();
 
@@ -42,7 +42,7 @@ int Executor::execute_ast(const QJsonObject& ast_root) {
         QString func_name = params_js["func"].toArray()[0].toString();
         //执行操作.
         auto map = func_map_.map();
-        int res = map[func_name](p_list);
+        int res = map[func_name](p_list,returnData);
         return res;
     } else if(status=="error"){
         QString root_error_log = ast_root["error_log"].toString();

@@ -32,5 +32,64 @@ Sophomore practical training course: DBMS
 
 
 
+### Server发送的数据格式
+
+```json
+{
+    "code": "status_code",
+    "func": "ShowDatabases",
+    "data": ["db1","db2"]
+}
+
+
+{
+    "code": "status_code",
+    "func": "ShowTables",
+    "data": ["tb1","tb2"]
+}
+
+
+{
+    "code": "status_code",
+    "func": "ShowDatabases",
+    "data": ["db1","db2"]
+}
+
+
+{
+    "code": "status_code",
+    "func": "DescribeTable",
+    "data": [
+        {
+            "cname":"",
+            "type":"",
+            "cs_name":""
+        }
+    ]
+}
+
+
+{
+    "code": "status_code",
+    "func": "Select",
+    "data": [
+        ["c1","c2","c3","c4"],
+        ["v11","v12","v13","v14"],
+        ["v21","v22","v23","v24"],
+    ]
+}
+
+
+// others
+
+{
+    "code" : "status_code",
+    "func" : "func_name",
+    "data": 
+}
+
+
+```
+
 
 

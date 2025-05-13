@@ -300,7 +300,7 @@ QJsonObject DMLParser::parseCMD(const QString &sql) {
     QRegularExpressionMatch match = insertPattern.match(sql.trimmed()); // 使用 trim 来去除首尾空格
 
     if (match.hasMatch()) {
-        // --- 匹配成功，解析 INSERT 语句 ---
+        // -------  INSERT -------
         ast_data["op"] = "insert";
         ast_data["object"] = "table";
 
@@ -335,12 +335,23 @@ QJsonObject DMLParser::parseCMD(const QString &sql) {
         }
         ast_data["values"] = valuesArray;
 
-        if(valuesArray.size()!=columnsArray.size()) {
+        //对columns的大小和values的大小进行判断
+        bool is_size_eq = true;
+        for(int i=0;i<valuesArray.size();i++) {
+            const auto& val = valuesArray[i].toArray();
+            if(val.size()!=columnsArray.size()) {
+                is_size_eq = false;
+                break;
+            }
+        }
+        if(!is_size_eq) {
             ast_data["status"] = "error";
             ast_data["error_log"] = QString("column size:" + QString::number(columnsArray.size())) +
                                     QString(". didn't match value size:" + QString::number(valuesArray.size()));
+            qDebug() << "columnArray:" << columnsArray;
+            qDebug() << "valueArray:" << valuesArray;
         }
-
+        // --------SELECT--------
     } else if ((match = selectPattern.match(sql)).hasMatch()) {
         ast_data["op"] = "select";       // 操作类型
         ast_data["object"] = "table";      // 操作对象
