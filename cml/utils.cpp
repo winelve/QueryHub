@@ -134,3 +134,21 @@ void PrintSelectRes(const std::vector<std::vector<std::any>>& returnRecords) {
     // 使用 qDebug() 输出
     qDebug().noquote() << outputStr;
 }
+
+
+QJsonDocument makeJsDocument(const QString& code,const QString& func,const QJsonArray& data) {
+    QJsonObject send_data;
+    send_data["code"] = code;
+    send_data["func"] = func;
+    send_data["data"] = data;
+    return QJsonDocument(send_data);
+}
+
+QJsonDocument makeJsDocument(const int code,const QString& func,const QJsonArray& data) {
+    QJsonObject send_data;
+    send_data["code"] = QString::number(code);
+    send_data["func"] = func;
+    send_data["data"] = data;
+    return QJsonDocument(send_data);
+}
+

@@ -148,7 +148,7 @@ private:
             "(\\w+)"                        // table - Group 2
             "(?:\\s+WHERE\\s+\\(([^)]+)\\))?" // Optional WHERE (...) - Group 3
             "(?:\\s+JOIN\\s+\\(([^)]+)\\))?"  // Optional JOIN (...) - Group 4
-            "(?:\\s+ORDER\\s+BY\\s+\\(([^)]+)\\))?" // Optional ORDERED BY (...) - Group 5
+            "(?:\\s+ORDER\\s+BY\\s+\\(([^)]+)\\))?" // Optional ORDER BY (...) - Group 5
             "\\s*;$"                        // Optional whitespace and semicolon at end
             ),
         QRegularExpression::CaseInsensitiveOption

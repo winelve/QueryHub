@@ -1,7 +1,6 @@
 #ifndef FUNCMAP_H
 #define FUNCMAP_H
 
-
 #include <functional>
 #include <QMap>
 #include <QVariant>
@@ -24,13 +23,13 @@ public:
         return params_map_;
     }
 
-    QMap<QString,std::function<int(const QVariantList &)>> map() {
+    QMap<QString,std::function<int(const QVariantList &params,QJsonDocument& returnData)>> map() {
         return func_map_;
     }
 
 private:
     DataProcessor& db;
-    QMap<QString,std::function<int(const QVariantList &)>> func_map_;
+    QMap<QString,std::function<int(const QVariantList &params,QJsonDocument& returnData)>> func_map_;
     QJsonObject params_map_;
 
     void read_js_file();

@@ -1,8 +1,10 @@
 #include <QDebug>
+#include <QCoreApplication>
 
 #include "parser.h"
 #include "executor.h"
 #include "dataprocessor.h"
+#include "server.h"
 #include "utils.h"
 
 
@@ -29,6 +31,7 @@ void test_sql() {
                     "SELECT (*) FROM orders ORDER BY (order_id);",
                     "DELETE orders WHERE (order_id=4);",
                     "SELECT (*) FROM orders ORDER BY (order_id);",
+                    "SHOW TABLES;",
                    }},
     };
 
@@ -38,9 +41,12 @@ void test_sql() {
 
         for(auto& sql: test_sqls[s]) {
             qDebug() << sql;
+            QJsonDocument send_doc;
             QJsonObject ast_root = p.parse_sql(sql);
             // printJs(ast_root);
-            int res = e.execute_ast(ast_root);
+            int res = e.execute_ast(ast_root,send_doc);
+            qDebug() << "send_doc:";
+            qDebug() << send_doc;
             qDebug() << "---> res:" << res;
             qDebug() << "\n\n";
         }
@@ -48,13 +54,17 @@ void test_sql() {
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv); // Create the application with event loop
 
     DataProcessor::GetInstance().Read(0);
     DataProcessor::GetInstance().CreateUser("root","123456");
     DataProcessor::GetInstance().Login("root","123456");
-    test_sql();
-    DataProcessor::GetInstance().Write();
 
-    return 0;
+    Server server(8080);             // Start server on port 8080
+    qDebug() << "Server is running...";
+
+    DataProcessor::GetInstance().Write();
+    return app.exec();               // Start the event loop
 }
+
