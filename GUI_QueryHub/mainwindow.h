@@ -25,6 +25,9 @@ public:
     void initEdgeLayout();
     void initContent();
 
+private slots:
+    void onToolButton1Clicked();
+
 private:
     ElaContentDialog* _closeDialog{nullptr};
     T_About* _aboutPage{nullptr};
@@ -37,6 +40,10 @@ private:
     T_DeleteField* _delFieldsPage{nullptr};
     QString _aboutKey{""};
     QString _settingKey{""};
+
+    //---------------------------------------------------------------------------
+
+
 };
 
 #endif // MAINWINDOW_H

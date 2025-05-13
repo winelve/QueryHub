@@ -16,8 +16,10 @@
 #include "ElaTheme.h"
 #include "ElaToolBar.h"
 #include "ElaToolButton.h"
+#include <ElaMessageBar.h>
 
 #include "Pages/t_setting.h"
+#include "Pages/t_connectpage.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : ElaWindow(parent)
@@ -29,18 +31,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     //中心窗口
     initContent();
-
-    // 拦截默认关闭事件
-    _closeDialog = new ElaContentDialog(this);
-    connect(_closeDialog, &ElaContentDialog::rightButtonClicked, this, &MainWindow::closeWindow);
-    connect(_closeDialog, &ElaContentDialog::middleButtonClicked, this, [=]() {
-        _closeDialog->close();
-        showMinimized();
-    });
-    this->setIsDefaultClosed(false);
-    connect(this, &MainWindow::closeButtonClicked, this, [=]() {
-        _closeDialog->exec();
-    });
+    this->setIsDefaultClosed(true);
 
     //移动到中心
     moveToCenter();
@@ -62,27 +53,6 @@ void MainWindow::initWindow()
 }
 
 void MainWindow::initEdgeLayout(){
-    //菜单栏
-    ElaMenuBar* menuBar = new ElaMenuBar(this);
-    menuBar->setFixedHeight(30);
-    QWidget* customWidget = new QWidget(this);
-    QVBoxLayout* customLayout = new QVBoxLayout(customWidget);
-    customLayout->setContentsMargins(0, 0, 0, 0);
-    customLayout->addWidget(menuBar);
-    customLayout->addStretch();
-    this->setCustomWidget(ElaAppBarType::MiddleArea, customWidget);
-    this->setCustomWidgetMaximumWidth(500);
-
-    ElaMenu* uesrMenu = menuBar->addMenu(ElaIconType::UserGroup, "用户");
-    menuBar->addMenu(uesrMenu);
-
-    ElaMenu* fileMenu = menuBar->addMenu(ElaIconType::File, "文件");
-    fileMenu->setMenuItemHeight(27);
-    fileMenu->addElaIconAction(ElaIconType::FileArrowUp, "导入数据");
-    fileMenu->addElaIconAction(ElaIconType::FileArrowDown, "导出数据");
-    menuBar->addSeparator();
-
-
     //工具栏
     ElaToolBar* toolBar = new ElaToolBar("工具栏", this);
     toolBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
@@ -92,8 +62,10 @@ void MainWindow::initEdgeLayout(){
     // toolBar->setFloatable(false);
     // toolBar->setMovable(false);
     ElaToolButton* toolButton1 = new ElaToolButton(this);
-    toolButton1->setElaIcon(ElaIconType::BadgeCheck);
+    toolButton1->setElaIcon(ElaIconType::Link);
     toolBar->addWidget(toolButton1);
+    connect(toolButton1, &ElaToolButton::clicked, this, &MainWindow::onToolButton1Clicked);
+    //---------------------------------------------------------
     ElaToolButton* toolButton2 = new ElaToolButton(this);
     toolButton2->setElaIcon(ElaIconType::ChartUser);
     toolBar->addWidget(toolButton2);
@@ -175,7 +147,7 @@ void MainWindow::initContent(){
     QString fun_2_del;
     QString fun_2_alt;
     //QString fun_3;
-    addExpanderNode("我的连接", fun_1_dis, ElaIconType::Link); //  层级一
+
     addExpanderNode("DDL", fun_1_ddl, ElaIconType::BullseyeArrow);
     addExpanderNode("查询", fun_1_dml, ElaIconType::CircleLocationArrow);
     //-------------------------------------------------------------------------------------------
@@ -193,5 +165,22 @@ void MainWindow::initContent(){
     addPageNode("删除字段", _delFieldsPage, fun_2_del, ElaIconType::PenField);
     // addPageNode("删除记录", new QWidget(this), fun_2_del, ElaIconType::ChartGantt);
     // addPageNode("删除索引", new QWidget(this), fun_2_del, ElaIconType::Tags);
+
+}
+
+void MainWindow::onToolButton1Clicked() {
+    //停靠窗口
+    ElaDockWidget* connectWidget = new ElaDockWidget("新建连接", this);
+    T_ConnectPage *_connectPage = new T_ConnectPage(this);
+    connectWidget->setWidget(_connectPage);
+    this->addDockWidget(Qt::RightDockWidgetArea, connectWidget);
+    resizeDocks({connectWidget}, {200}, Qt::Horizontal);
+    if ( _connectPage->setlink_status()) {
+        QString linkname = _connectPage->setlinks();
+        QString fun1;
+        addExpanderNode(linkname, fun1, ElaIconType::Link); //  层级一
+    }/*else{
+        ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", "创建连接失败!", 2500, this);
+    }*/
 
 }

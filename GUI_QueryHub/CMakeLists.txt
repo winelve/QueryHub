@@ -36,6 +36,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Pages/t_deletetable.h Pages/t_deletetable.cpp
         Pages/t_addfields.h Pages/t_addfields.cpp
         Pages/t_deletefield.h Pages/t_deletefield.cpp
+        IDBMSInterface.h
+        Pages/t_connectpage.h Pages/t_connectpage.cpp
+
+
 
     )
 # Define target properties for Android with Qt 6 as:
