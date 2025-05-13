@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 添加 Qt 组件
 find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Network)
+
+# 启用 Qt 的自动 MOC、UIC 和 RCC
+set(CMAKE_AUTOMOC ON)  # 这行非常重要！
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 # 查找所有 .cpp 文件
 file(GLOB_RECURSE SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
@@ -26,13 +33,9 @@ target_sources(cml PUBLIC ${HEADER_FILES})
 target_include_directories(cml PUBLIC ${CORE_INCLUDE_DIRS})
 # 链接 QtCore
 target_link_libraries(cml PUBLIC Qt6::Core)
+target_link_libraries(cml PUBLIC Qt6::Network)
 # 如果core是另一个Target，还需要链接core库
 target_link_libraries(cml PUBLIC core)
 
-# Windows 平台特定设置
-if(WIN32)
-    # 链接 Winsock 库
-    target_link_libraries(cml PUBLIC ws2_32)
-endif()
 
 

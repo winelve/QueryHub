@@ -11,6 +11,7 @@ class Parser
 public:
     Parser();
 
+    QList<QString> split_sqls(const QString& sqls);
     QJsonObject parse_sql(const QString &sql);
 
 
@@ -31,6 +32,14 @@ private:
     DropParser drop_parser;
     DMLParser dml_parser;
     OtherCmdParser other_parser;
+
+
+    // Regular expression to match SQL statements ending with semicolon
+    const QRegularExpression sqlStatementPattern{
+        QStringLiteral("[^;]+;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
 };
 
 #endif // PARSER_H

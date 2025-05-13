@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # 添加 Qt 组件
-find_package(Qt6 REQUIRED COMPONENTS Core Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
 
 # 查找所有 .cpp 文件
 file(GLOB_RECURSE SOURCE_FILES
@@ -40,7 +40,7 @@ target_sources(client PUBLIC ${HEADER_FILES})  # 目标名从server改为client
 target_include_directories(client PUBLIC ${CLIENT_INCLUDE_DIRS})  # 目标名和变量名都从server改为client
 
 # 链接 Qt组件
-target_link_libraries(client PUBLIC Qt6::Core Qt6::Network)  # 目标名从server改为client
+target_link_libraries(client PUBLIC Qt6::Core Qt6::Network Qt6::Widgets)  # 目标名从server改为client
 
 # 链接 core 和 cml 库
 target_link_libraries(client PUBLIC core cml)  # 目标名从server改为client

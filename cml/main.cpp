@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QCoreApplication>
 
 #include "parser.h"
 #include "executor.h"
@@ -53,18 +54,17 @@ void test_sql() {
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv); // Create the application with event loop
 
     DataProcessor::GetInstance().Read(0);
     DataProcessor::GetInstance().CreateUser("root","123456");
     DataProcessor::GetInstance().Login("root","123456");
 
-    Server server(8080);
-    if (server.start()) {
-        server.run();
-    }
+    Server server(8080);             // Start server on port 8080
+    qDebug() << "Server is running...";
 
     DataProcessor::GetInstance().Write();
-
-    return 0;
+    return app.exec();               // Start the event loop
 }
+

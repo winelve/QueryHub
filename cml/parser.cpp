@@ -6,6 +6,20 @@
 
 Parser::Parser() { }
 
+QList<QString> Parser::split_sqls(const QString& sqls) {
+    QList<QString> result;
+    QRegularExpressionMatchIterator iterator = sqlStatementPattern.globalMatch(sqls);
+    while (iterator.hasNext()) {
+        QRegularExpressionMatch match = iterator.next();
+        QString statement = match.captured().trimmed();
+        if (!statement.isEmpty()) {
+            result.append(statement);
+        }
+    }
+    return result;
+}
+
+
 QJsonObject Parser::parse_sql(const QString &_sql){
 
     QString sql = _sql.toLower();

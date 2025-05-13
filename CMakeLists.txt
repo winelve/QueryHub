@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Qt6 组件
 # find_package(Qt6 REQUIRED COMPONENTS Widgets)
-
-
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Network)
 
 # 生成可执行文件
 add_executable(queryhub_main ./main.cpp)

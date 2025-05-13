@@ -51,13 +51,6 @@ Sophomore practical training course: DBMS
 
 {
     "code": "status_code",
-    "func": "ShowDatabases",
-    "data": ["db1","db2"]
-}
-
-
-{
-    "code": "status_code",
     "func": "DescribeTable",
     "data": [
         {
@@ -85,11 +78,41 @@ Sophomore practical training course: DBMS
 {
     "code" : "status_code",
     "func" : "func_name",
-    "data": 
+    "data": []
 }
 
 
 ```
+
+
+
+### Client API
+
+```c++
+
+std::vector<std::string> get_all_database();
+std::vector<std::string> get_all_tables(const std::string& database);
+
+//--------
+QJsonArray describe_table(const std::string& database, const std::string& table);
+QJsonArray的形式:
+[
+    {
+        "cname":"",
+        "type":"",
+        "cs_name":""
+    },
+    {
+        "cname":"",
+        "type":"",
+        "cs_name":""
+    }
+]
+//--------
+std::vector<std::vector<std::string>> select_table(const std::string& database, const std::string& table);
+```
+
+
 
 
 

@@ -1,234 +1,158 @@
-// client.cpp
 #include "client.h"
-#include "utils.h"
-
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTimer>
 #include <QDebug>
-#include <cstring>
-#include <chrono>
-#include <QThread>
-#include <QList>
 
-#ifdef _WIN32
-#pragma comment(lib, "ws2_32.lib")
-#else
-#include <unistd.h>
-#include <arpa/inet.h>
-#endif
-
-Client::Client(const std::string& server_ip, int server_port)
-    : server_ip_(server_ip), server_port_(server_port), client_socket_(SOCKET_ERROR_VALUE), connected_(false) {}
-
-Client::~Client() {
-    disconnect();
+Client::Client(QObject* parent) : QObject(parent), socket(new QTcpSocket(this)), expectedLength(0), responseReceived(false), loop(new QEventLoop(this)) {
+    connect(socket, &QTcpSocket::readyRead, this, &Client::onReadyRead);
 }
 
-bool Client::connect() {
-#ifdef _WIN32
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        qDebug() << "WSAStartup failed";
-        return false;
-    }
-#endif
-
-    // 创建客户端socket
-    client_socket_ = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_socket_ == SOCKET_ERROR_VALUE) {
-        qDebug() << "Failed to create socket";
-        return false;
-    }
-
-    // 连接到服务器
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(server_port_);
-
-    if (inet_pton(AF_INET, server_ip_.c_str(), &server_addr.sin_addr) <= 0) {
-        qDebug() << "Invalid address";
-        closesocket(client_socket_);
-        return false;
-    }
-
-    if (::connect(client_socket_, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        qDebug() << "Connection failed";
-        closesocket(client_socket_);
-        return false;
-    }
-
-    connected_ = true;
-    qDebug() << "Connected to server at" << server_ip_.c_str() << ":" << server_port_;
-
-    // 启动接收响应的线程
-    receive_thread_ = std::thread(&Client::receiveResponses, this);
-
-    return true;
-}
-
-void Client::disconnect() {
-    connected_ = false;
-
-    if (client_socket_ != SOCKET_ERROR_VALUE) {
-        closesocket(client_socket_);
-        client_socket_ = SOCKET_ERROR_VALUE;
-    }
-
-    if (receive_thread_.joinable()) {
-        receive_thread_.join();
-    }
-
-#ifdef _WIN32
-    WSACleanup();
-#endif
-
-    qDebug() << "Disconnected from server";
-}
-
-bool Client::sendRequest(const std::string& request) {
-    if (!connected_) {
-        qDebug() << "Not connected to server";
-        return false;
-    }
-
-    std::string req = request + "\n";
-    if (send(client_socket_, req.c_str(), req.length(), 0) < 0) {
-        qDebug() << "Failed to send request";
-        return false;
-    }
-
-    return true;
-}
-
-void Client::run() {
-    QList<QString> test_sqls = {
-        "USE test_db;",
-        "SELECT (*) FROM orders;",
-        "SELECT (*) FROM orders;",
-    };
-
-    int i=0;
-    while (connected_ && i<test_sqls.size()) {
-        QThread::sleep(3);
-
-        QString sql = test_sqls[i];
-        qDebug() << "Sql: " << sql;
-        if (sql == "exit") {
-            break;
-        }
-
-        if (!sendRequest(sql.toStdString())) {
-            break;
-        }
-        i++;
-    }
-    QThread::sleep(10);
-    disconnect();
-}
-
-void Client::receiveResponses() {
-    char buffer[1024];
-
-    while (connected_) {
-        memset(buffer, 0, sizeof(buffer));
-        int bytes_read = recv(client_socket_, buffer, sizeof(buffer) - 1, 0);
-
-        if (bytes_read > 0) {
-            // 将接收到的数据追加到缓冲区
-            buffer_.append(buffer, bytes_read);
-
-            // 处理可能有多个JSON对象的情况
-            size_t pos;
-            while ((pos = buffer_.find('\n')) != std::string::npos) {
-                std::string json_str = buffer_.substr(0, pos);
-                buffer_ = buffer_.substr(pos + 1);
-
-                // 解析收到的JSON
-                parseJsonResponse(json_str);
-            }
-        } else if (bytes_read == 0) {
-            qDebug() << "Server closed the connection";
-            connected_ = false;
-            break;
-        } else {
-#ifdef _WIN32
-            int error = WSAGetLastError();
-            if (error != WSAEWOULDBLOCK) {
-                qDebug() << "recv failed with error:" << error;
-                connected_ = false;
-                break;
-            }
-#else
-            if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                qDebug() << "recv failed with error:" << errno;
-                connected_ = false;
-                break;
-            }
-#endif
-
-            // 短暂休眠，避免CPU占用过高
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-    }
-}
-
-void Client::parseJsonResponse(const std::string& response) {
-    QJsonDocument jsonDoc = QJsonDocument::fromJson(QByteArray::fromStdString(response));
-    if (jsonDoc.isNull() || !jsonDoc.isObject()) {
-        qDebug() << "Invalid JSON received:" << response.c_str();
-        return;
-    }
-
-    QJsonObject jsonObj = jsonDoc.object();
-
-    // 获取基本字段
-    QString code = jsonObj["code"].toString();
-    QString func = jsonObj["func"].toString();
-    QJsonArray data = jsonObj["data"].toArray();
-
-    qDebug() << "Received response - Function:" << func << ", Status Code:" << code;
-
-    // 根据func字段分发到不同的处理函数
-    if (func == "ShowDatabases") {
-        handleShowDatabases(data);
-    } else if (func == "ShowTables") {
-        handleShowTables(data);
-    } else if (func == "DescribeTable") {
-        handleDescribeTable(data);
-    } else if (func == "Select") {
-        handleSelect(data);
+bool Client::connectToServer(const QString& host, int port) {
+    socket->connectToHost(host, port);
+    if (socket->waitForConnected(3000)) {
+        qDebug() << "Connected to server at" << host << ":" << port;
+        return true;
     } else {
-        // 处理其他类型的响应
-        handleGenericResponse(func, data, code);
-    }
-    qDebug() << "\n\n";
-}
-
-void Client::handleShowDatabases(const QJsonArray& data) {
-    qDebug() << "Databases:" << data.toVariantList();
-}
-
-void Client::handleShowTables(const QJsonArray& data) {
-    qDebug() << "Tables:" << data.toVariantList();
-}
-
-void Client::handleDescribeTable(const QJsonArray& data) {
-    for (const QJsonValue& row : data) {
-        QJsonObject columnInfo = row.toObject();
-        qDebug() << columnInfo["cname"].toString() << "  " << columnInfo["type"].toString() << "  " << columnInfo["cs_name"].toString();
+        qDebug() << "Failed to connect:" << socket->errorString();
+        return false;
     }
 }
 
-void Client::handleSelect(const QJsonArray& data) {
-    if (data.isEmpty()) {
-        qDebug() << "No data returned from query.";
-        return;
+QJsonArray Client::handle_sql(const QString& sql) {
+    if (socket->state() != QAbstractSocket::ConnectedState) {
+        qDebug() << "Not connected to server";
+        return QJsonArray();
     }
+    QByteArray request = sql.toUtf8();
+    qint32 length = request.size();
+    qDebug() << "Sending SQL query of length" << length << ":" << sql;
+    socket->write(reinterpret_cast<char*>(&length), sizeof(qint32));
+    socket->write(request);
 
-    for(int i=0;i<data.size();i++) {
-        qDebug() << data[i];
+    responseReceived = false;
+    expectedLength = 0;
+    QTimer timer;
+    timer.setSingleShot(true);
+    connect(&timer, &QTimer::timeout, loop, &QEventLoop::quit);
+    timer.start(5000); // 5-second timeout
+    connect(socket, &QTcpSocket::disconnected, loop, &QEventLoop::quit);
+    loop->exec();
+
+    if (responseReceived) {
+        qDebug() << "Received response:" << responseArray;
+        return responseArray;
+    } else {
+        qDebug() << "No response received (timeout or disconnected)";
+        return QJsonArray();
     }
-    PrintJsonSelectRes(data);
 }
 
-void Client::handleGenericResponse(const QString& func, const QJsonArray& data, const QString& code) {
-    qDebug() << "Function:" << func << ", Status:" << code;
+void Client::onReadyRead() {
+    while (socket->bytesAvailable() >= static_cast<qint64>(sizeof(qint32))) {
+        if (expectedLength == 0) {
+            socket->read(reinterpret_cast<char*>(&expectedLength), sizeof(qint32));
+            qDebug() << "Expecting response of length:" << expectedLength;
+        }
+        if (expectedLength > 0 && socket->bytesAvailable() >= expectedLength) {
+            QByteArray data = socket->read(expectedLength);
+            expectedLength = 0;
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            if (doc.isArray()) {
+                responseArray = doc.array();
+                responseReceived = true;
+                qDebug() << "Response parsed successfully";
+                loop->quit();
+            } else {
+                qDebug() << "Invalid JSON response";
+            }
+        }
+    }
+}
+
+std::vector<std::string> Client::get_all_database() {
+    QJsonArray result = handle_sql("SHOW DATABASES;");
+    if (!result.isEmpty()) {
+        QJsonObject obj = result[0].toObject();
+        QJsonArray data = obj["data"].toArray();
+        std::vector<std::string> databases;
+        for (const QJsonValue& val : data) {
+            databases.push_back(val.toString().toStdString());
+        }
+        return databases;
+    }
+    return {};
+}
+
+std::vector<std::string> Client::get_all_tables(const std::string& database) {
+    QString sql1 = QString("USE %1;").arg(QString::fromStdString(database));
+    QString sql2 = QString("SHOW TABLES;");
+
+    handle_sql(sql1);
+    QJsonArray result = handle_sql(sql2);
+
+    if (!result.isEmpty()) {
+        QJsonObject obj = result[0].toObject();
+        QJsonArray data = obj["data"].toArray();
+        std::vector<std::string> tables;
+        for (const QJsonValue& val : data) {
+            tables.push_back(val.toString().toStdString());
+        }
+        return tables;
+    }
+    return {};
+}
+
+QJsonArray Client::describe_table(const std::string& database, const std::string& table) {
+    QString sql1 = QString("USE %1;").arg(QString::fromStdString(database));
+    QString sql2 = QString("DESC %1;").arg(QString::fromStdString(table));
+
+    handle_sql(sql1);
+    QJsonArray result = handle_sql(sql2);
+    if (!result.isEmpty()) {
+        QJsonObject obj = result[0].toObject();
+        return obj["data"].toArray();
+    }
+    return QJsonArray();
+}
+
+std::vector<std::vector<std::string>> Client::select_table(const std::string& database, const std::string& table) {
+    QString sql1 = QString("USE %1;").arg(QString::fromStdString(database));
+    QString sql2 = QString("SELECT (*) FROM %1;").arg(QString::fromStdString(table));
+
+    handle_sql(sql1);
+    QJsonArray result = handle_sql(sql2);
+
+    if (result.isEmpty()) {
+        return {};
+    }
+
+    QJsonObject obj = result[0].toObject();
+    QJsonArray data = obj["data"].toArray();
+    std::vector<std::vector<std::string>> tableData;
+
+    for (const QJsonValue& rowVal : data) {
+        QJsonArray rowArray = rowVal.toArray();
+        std::vector<std::string> row;
+        for (const QJsonValue& cell : rowArray) {
+            if (cell.isString()) {
+                row.push_back(cell.toString().toStdString());
+            } else if (cell.isDouble()) {
+                double num = cell.toDouble();
+                if (num == std::floor(num)) {
+                    row.push_back(std::to_string(static_cast<int>(num)));  // 整数
+                } else {
+                    row.push_back(std::to_string(num));  // 浮点数
+                }
+            } else if (cell.isBool()) {
+                row.push_back(cell.toBool() ? "true" : "false");
+            } else if (cell.isNull()) {
+                row.push_back("NULL");
+            } else {
+                row.push_back("");  // 未知类型
+            }
+        }
+        tableData.push_back(row);
+    }
+    return tableData;
 }
