@@ -244,61 +244,6 @@ public:
     }
 };
 
-// void MainWindow::init_treeview(const QString& linkkey)
-// {
-//     qDebug() << "Initializing tree view for connection:" << linkkey;
-
-//     // 获取数据库列表
-//     std::vector<std::string> databases;
-//     int ret = DataProcessor::GetInstance().ShowDatabases(databases);
-//     if (ret != 0) {
-//         qDebug() << "Error loading databases, error code:" << ret;
-//         ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法加载数据库列表！", 3000);
-//         return;
-//     }
-
-//     // 遍历数据库
-//     for (const auto& db : databases) {
-//         QString dbKey;
-//         // 添加数据库节点（ExpanderNode）
-//         addExpanderNode(QString::fromStdString(db), dbKey, linkkey, ElaIconType::Database);
-//         qDebug() << "Added database node:" << db << ", key:" << dbKey;
-
-//         // 切换到该数据库
-//         ret = DataProcessor::GetInstance().UseDatabase(db);
-//         if (ret != 0) {
-//             qDebug() << "Error using database:" << db << ", error code:" << ret;
-//             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法使用数据库 %1").arg(QString::fromStdString(db)), 3000);
-//             continue;
-//         }
-
-//         // 获取表列表
-//         std::vector<std::string> tables;
-//         ret = DataProcessor::GetInstance().ShowTables(tables);
-//         if (ret != 0) {
-//             qDebug() << "Error loading tables for database:" << db << ", error code:" << ret;
-//             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法加载数据库 %1 的表").arg(QString::fromStdString(db)), 3000);
-//             continue;
-//         }
-
-//         // 添加表节点（PageNode）
-//         for (const auto& tb : tables) {
-//             QString tbName = QString::fromStdString(tb);
-//             QString tbKey;
-//             // 使用 PageNode，不关联 QWidget
-//             T_TableView* tableView = new T_TableView(QString::fromStdString(db),QString::fromStdString(tb), this);
-//             addPageNode(tbName, tableView, dbKey, ElaIconType::Table);
-//             tableView->dis_table(tableData);
-//             // 保存节点信息（tbName 作为 nodeKey）
-//             _nodeMap[tbName] = {QString::fromStdString(db), tbName};
-//             qDebug() << "Added table node:" << tbName << " under database:" << db;
-//         }
-//     }
-
-//     // 连接 navigationNodeClicked 信号
-//     connect(this, &MainWindow::navigationNodeClicked, this, &MainWindow::onNavigationNodeClicked);
-//     qDebug() << "navigationNodeClicked signal connected";
-// }
 void MainWindow::init_treeview(const QString& linkkey)
 {
     qDebug() << "Initializing tree view for connection:" << linkkey;
@@ -315,8 +260,9 @@ void MainWindow::init_treeview(const QString& linkkey)
     // 遍历数据库
     for (const auto& db : databases) {
         QString dbKey;
+        QString dbName = QString::fromStdString(db);
         // 添加数据库节点（ExpanderNode）
-        addExpanderNode(QString::fromStdString(db), dbKey, linkkey, ElaIconType::Database);
+        addExpanderNode(dbName, dbKey, linkkey, ElaIconType::Database);
         qDebug() << "Added database node:" << db << ", key:" << dbKey;
 
         // 切换到该数据库
@@ -339,17 +285,27 @@ void MainWindow::init_treeview(const QString& linkkey)
         // 添加表节点（PageNode）
         for (const auto& tb : tables) {
             QString tbName = QString::fromStdString(tb);
-            QString tbKey = tbName + "_" + dbKey; // Create a unique key, e.g., "tb1_db1"
+            QString tbKey = tbName + "_" + dbName; // Create a unique key, e.g., "tb1_db1"
             // Use a placeholder QWidget or nullptr for navigation
-            addPageNode(tbName, new QWidget(), dbKey, ElaIconType::Table);
+            QWidget* tb_widget = new QWidget();
+            addPageNode(tbName, tb_widget, dbKey, ElaIconType::Table);
             // Save node information with tbKey
-            _nodeMap[tbKey] = {QString::fromStdString(db), tbName};
-            qDebug() << "Added table node:" << tbName << " with nodeKey:" << tbKey << " under database:" << db;
+            qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!property:" << tb_widget->property("ElaPageKey").toString();
+            // tb_widget->setProperty("ElaPageKey",tbKey);
+            // qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!property:" << tb_widget->property("ElaPageKey").toString();
+            QString nodeKey = tb_widget->property("ElaPageKey").toString();
+            _nodeMap[nodeKey] = {dbName, tbName};
+            qDebug() << "nodekey:" << nodeKey;
         }
     }
 
     // 连接 navigationNodeClicked 信号
     connect(this, &MainWindow::navigationNodeClicked, this, [this](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
+        qDebug() << "--------------------------------------------------------hello";
+
+        qDebug() << "type:" << nodeType ;
+        qDebug() << "key:" << nodeKey;
+
         onNavigationNodeClicked(nodeType, nodeKey);
     });
     qDebug() << "navigationNodeClicked signal connected";
@@ -372,19 +328,6 @@ void MainWindow::click_link_btn()
 
 void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey)
 {
-    qDebug() << "onNavigationNodeClicked called, nodeType:" << static_cast<int>(nodeType) << ", nodeKey:" << nodeKey;
-
-    if (nodeType != ElaNavigationType::PageNode) {
-        qDebug() << "Ignored non-PageNode click:" << nodeKey;
-        return;
-    }
-
-    qDebug() << "Checking node in _nodeMap, keys:" << _nodeMap.keys();
-    if (!_nodeMap.contains(nodeKey)) {
-        qDebug() << "Unknown node:" << nodeKey;
-        return;
-    }
-
     QString database = _nodeMap[nodeKey].first;
     QString table = _nodeMap[nodeKey].second;
     qDebug() << "Matched node, database:" << database << ", table:" << table;
