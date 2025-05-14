@@ -113,6 +113,7 @@ void MainWindow::initContent()
     _delDataBasePage = new T_DeleteDataBase(this);
     _delTablePage = new T_DeleteTable(this);
     _delFieldsPage = new T_DeleteField(this);
+    _selectPage = new T_Select(this);
 
     addFooterNode("Setting", _settingPage, _settingKey, 0, ElaIconType::GearComplex);
     addFooterNode("About", nullptr, _aboutKey, 0, ElaIconType::User);
@@ -134,8 +135,7 @@ void MainWindow::initContent()
     QString fun_2_alt;
 
     addExpanderNode("功能操作", fun_1_ddl, ElaIconType::BullseyeArrow);
-    addExpanderNode("查询", fun_1_dml, ElaIconType::CircleLocationArrow);
-    addExpanderNode("添加", fun_2_add, fun_1_ddl, ElaIconType::Plus);
+    addExpanderNode("添加",fun_2_add, fun_1_ddl, ElaIconType::Plus);
     addExpanderNode("删除", fun_2_del, fun_1_ddl, ElaIconType::Minus);
     addExpanderNode("修改", fun_2_alt, fun_1_ddl, ElaIconType::Pencil);
 
@@ -145,6 +145,8 @@ void MainWindow::initContent()
     addPageNode("删除数据库", _delDataBasePage, fun_2_del, ElaIconType::Database);
     addPageNode("删除表", _delTablePage, fun_2_del, ElaIconType::Table);
     addPageNode("删除字段", _delFieldsPage, fun_2_del, ElaIconType::PenField);
+    addPageNode("查询", _selectPage, ElaIconType::CircleLocationArrow);
+
 }
 
 // 假设 DataProcessor 接口（保持不变）

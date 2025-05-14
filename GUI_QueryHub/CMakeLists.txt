@@ -40,6 +40,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Pages/t_connectpage.h Pages/t_connectpage.cpp
         Pages/t_tableview.h Pages/t_tableview.cpp
         modle/t_tableviewmodel.h modle/t_tableviewmodel.cpp
+        Pages/t_select.h Pages/t_select.cpp
 
 
 

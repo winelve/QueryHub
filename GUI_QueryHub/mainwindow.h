@@ -14,6 +14,7 @@
 #include "Pages/t_deletefield.h"
 #include "Pages/t_setting.h"
 #include "Pages/t_tableview.h"
+#include "Pages/t_select.h"
 class T_About;
 class T_Setting;
 class T_AddDataBase;
@@ -24,6 +25,7 @@ class T_DeleteTable;
 class T_DeleteField;
 class T_ConnectPage;
 class T_TableView;
+class T_Select;
 
 class MainWindow : public ElaWindow
 {
@@ -49,6 +51,7 @@ private:
     T_DeleteDataBase* _delDataBasePage{nullptr};
     T_DeleteTable* _delTablePage{nullptr};
     T_DeleteField* _delFieldsPage{nullptr};
+    T_Select* _selectPage{nullptr};
     QString _aboutKey;
     QString _settingKey;
     QStringList _connectionNames;
