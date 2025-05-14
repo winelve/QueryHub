@@ -14,10 +14,70 @@
 #include "ElaToolButton.h"
 #include <ElaMessageBar.h>
 #include <QVBoxLayout>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 #include "Pages/t_setting.h"
 #include "Pages/t_connectpage.h"
 #include "Pages/t_tableview.h"
+
+// 模拟后端接口函数（仅用于测试）
+QJsonArray handle_sql(const QString& sql) {
+    // 模拟后端返回的数据
+    QJsonArray resultArray;
+
+    // 模拟第一个查询结果
+    QJsonObject result1;
+    result1["code"] = "200";
+    result1["func"] = "select";
+    QJsonArray data1;
+    QJsonArray header1;
+    header1.append("id");
+    header1.append("name");
+    header1.append("age");
+    header1.append("city");
+    QJsonArray row1;
+    row1.append("1");
+    row1.append("Alice");
+    row1.append("25");
+    row1.append("Beijing");
+    QJsonArray row2;
+    row2.append("2");
+    row2.append("Bob");
+    row2.append("30");
+    row2.append("Shanghai");
+    data1.append(header1);
+    data1.append(row1);
+    data1.append(row2);
+    result1["data"] = data1;
+    resultArray.append(result1);
+
+    // 模拟第二个查询结果
+    QJsonObject result2;
+    result2["code"] = "200";
+    result2["func"] = "select";
+    QJsonArray data2;
+    QJsonArray header2;
+    header2.append("product_id");
+    header2.append("product_name");
+    header2.append("price");
+    QJsonArray row3;
+    row3.append("101");
+    row3.append("Laptop");
+    row3.append("1200");
+    QJsonArray row4;
+    row4.append("102");
+    row4.append("Phone");
+    row4.append("800");
+    data2.append(header2);
+    data2.append(row3);
+    data2.append(row4);
+    result2["data"] = data2;
+    resultArray.append(result2);
+
+    return resultArray;
+}
 
 MainWindow::MainWindow(QWidget* parent)
     : ElaWindow(parent)
@@ -27,6 +87,7 @@ MainWindow::MainWindow(QWidget* parent)
     initContent();
     this->setIsDefaultClosed(true);
     moveToCenter();
+    click_run_btn();
 }
 
 MainWindow::~MainWindow()
@@ -57,10 +118,11 @@ void MainWindow::initEdgeLayout()
     toolBar->addWidget(link_btn);
     connect(link_btn, &ElaToolButton::clicked, this, &MainWindow::click_link_btn);
 
-    ElaToolButton* toolButton2 = new ElaToolButton(this);
-    toolButton2->setElaIcon(ElaIconType::ChartUser);
-    toolBar->addWidget(toolButton2);
+    run_btn = new ElaToolButton(this);
+    run_btn->setElaIcon(ElaIconType::Play);
+    toolBar->addWidget(run_btn);
     toolBar->addSeparator();
+
     ElaToolButton* toolButton3 = new ElaToolButton(this);
     toolButton3->setElaIcon(ElaIconType::Bluetooth);
     toolButton3->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
@@ -127,15 +189,13 @@ void MainWindow::initContent()
         }
     });
 
-    QString fun_1_dis;
     QString fun_1_ddl;
-    QString fun_1_dml;
     QString fun_2_add;
     QString fun_2_del;
     QString fun_2_alt;
 
     addExpanderNode("功能操作", fun_1_ddl, ElaIconType::BullseyeArrow);
-    addExpanderNode("添加",fun_2_add, fun_1_ddl, ElaIconType::Plus);
+    addExpanderNode("添加", fun_2_add, fun_1_ddl, ElaIconType::Plus);
     addExpanderNode("删除", fun_2_del, fun_1_ddl, ElaIconType::Minus);
     addExpanderNode("修改", fun_2_alt, fun_1_ddl, ElaIconType::Pencil);
 
@@ -146,7 +206,64 @@ void MainWindow::initContent()
     addPageNode("删除表", _delTablePage, fun_2_del, ElaIconType::Table);
     addPageNode("删除字段", _delFieldsPage, fun_2_del, ElaIconType::PenField);
     addPageNode("查询", _selectPage, ElaIconType::CircleLocationArrow);
+}
 
+void MainWindow::click_run_btn()
+{
+    // 连接 run_btn 点击事件
+    connect(run_btn, &ElaToolButton::clicked, this, [this]() {
+        // 确保 _selectPage 已初始化
+        if (!_selectPage) {
+            ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "查询页面未初始化!", 3000);
+            return;
+        }
+
+        // 获取 SQL 输入
+        QString sql = _selectPage->getQueryText().trimmed();
+        if (sql.isEmpty()) {
+            ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "请输入 SQL 查询语句!", 3000);
+            return;
+        }
+
+        // 重置查询结果
+        _selectPage->resetResults();
+
+        // 调用后端接口
+        QJsonArray results = handle_sql(sql);
+        if (results.isEmpty()) {
+            ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "查询结果为空!", 3000);
+            return;
+        }
+
+        // 解析每个查询结果
+        for (const QJsonValue& resultValue : results) {
+            QJsonObject resultObj = resultValue.toObject();
+            QString code = resultObj["code"].toString();
+            QString func = resultObj["func"].toString();
+            QJsonArray data = resultObj["data"].toArray();
+
+            if (code != "200") {
+                ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("查询失败，状态码: %1").arg(code), 3000);
+                continue;
+            }
+
+            // 将 QJsonArray 转换为 std::vector<std::vector<std::string>>
+            std::vector<std::vector<std::string>> tableData;
+            for (const QJsonValue& rowValue : data) {
+                QJsonArray rowArray = rowValue.toArray();
+                std::vector<std::string> row;
+                for (const QJsonValue& cell : rowArray) {
+                    row.push_back(cell.toString().toStdString());
+                }
+                tableData.push_back(row);
+            }
+
+            // 调用 T_Select::executeQuery() 处理单次查询结果
+            _selectPage->executeQuery(tableData);
+        }
+
+        ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", "查询执行成功!", 2000);
+    });
 }
 
 // 假设 DataProcessor 接口（保持不变）

@@ -2,6 +2,7 @@
 
 #include <QMap>
 #include <QPair>
+#include "ElaToolButton.h"
 #include "ElaWindow.h"
 #include "Pages/t_about.h"
 #include "Pages/t_adddatabase.h"
@@ -26,25 +27,31 @@ class T_DeleteField;
 class T_ConnectPage;
 class T_TableView;
 class T_Select;
+class ElaPushButton;
 
 class MainWindow : public ElaWindow
 {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    ~MainWindow() override;
+    ~MainWindow();
+
+private slots:
+    void click_link_btn();
+    void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
+    void init_treeview(const QString& linkkey);
 
 private:
     void initWindow();
     void initEdgeLayout();
     void initContent();
-    void init_treeview(const QString& linkkey);
-    void click_link_btn();
-    void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
 
-private:
+    //点击事件
+    void click_run_btn();
+
     T_About* _aboutPage{nullptr};
     T_Setting* _settingPage{nullptr};
+    T_ConnectPage* _connectPage{nullptr};
     T_AddDataBase* _addDataBasePage{nullptr};
     T_AddTable* _addTablePage{nullptr};
     T_AddFields* _addFieldsPage{nullptr};
@@ -52,13 +59,13 @@ private:
     T_DeleteTable* _delTablePage{nullptr};
     T_DeleteField* _delFieldsPage{nullptr};
     T_Select* _selectPage{nullptr};
-    QString _aboutKey;
+    T_TableView* _currentTableView{nullptr};
+
     QString _settingKey;
+    QString _aboutKey;
     QStringList _connectionNames;
 
-    // 存储节点信息：nodeKey -> (database, table)
     QMap<QString, QPair<QString, QString>> _nodeMap;
 
-    // 当前显示的表格视图
-    T_TableView* _currentTableView{nullptr};
+    ElaToolButton* run_btn{nullptr};
 };
