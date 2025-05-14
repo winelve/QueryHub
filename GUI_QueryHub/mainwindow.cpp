@@ -13,28 +13,25 @@
 #include "ElaToolBar.h"
 #include "ElaToolButton.h"
 #include <ElaMessageBar.h>
+#include <QVBoxLayout>
 
 #include "Pages/t_setting.h"
 #include "Pages/t_connectpage.h"
+#include "Pages/t_tableview.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : ElaWindow(parent)
 {
     initWindow();
-    //额外布局
     initEdgeLayout();
-
-    //中心窗口
     initContent();
     this->setIsDefaultClosed(true);
-
-    //移动到中心
     moveToCenter();
 }
 
 MainWindow::~MainWindow()
 {
-    delete this->_aboutPage;
+    delete _aboutPage;
 }
 
 void MainWindow::initWindow()
@@ -47,20 +44,19 @@ void MainWindow::initWindow()
     setWindowTitle("QureyHub");
 }
 
-void MainWindow::initEdgeLayout(){
-    //工具栏
+void MainWindow::initEdgeLayout()
+{
     ElaToolBar* toolBar = new ElaToolBar("工具栏", this);
     toolBar->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);
     toolBar->setToolBarSpacing(3);
     toolBar->setToolButtonStyle(Qt::ToolButtonIconOnly);
     toolBar->setIconSize(QSize(25, 25));
-    // toolBar->setFloatable(false);
-    // toolBar->setMovable(false);
+
     ElaToolButton* link_btn = new ElaToolButton(this);
     link_btn->setElaIcon(ElaIconType::Link);
     toolBar->addWidget(link_btn);
     connect(link_btn, &ElaToolButton::clicked, this, &MainWindow::click_link_btn);
-    //---------------------------------------------------------
+
     ElaToolButton* toolButton2 = new ElaToolButton(this);
     toolButton2->setElaIcon(ElaIconType::ChartUser);
     toolBar->addWidget(toolButton2);
@@ -97,8 +93,6 @@ void MainWindow::initEdgeLayout(){
     ElaToolButton* toolButton12 = new ElaToolButton(this);
     toolButton12->setElaIcon(ElaIconType::Crown);
     toolBar->addWidget(toolButton12);
-    QAction* test = new QAction(this);
-    test->setMenu(new QMenu(this));
 
     ElaProgressBar* progressBar = new ElaProgressBar(this);
     progressBar->setMinimum(0);
@@ -109,7 +103,8 @@ void MainWindow::initEdgeLayout(){
     this->addToolBar(Qt::TopToolBarArea, toolBar);
 }
 
-void MainWindow::initContent(){
+void MainWindow::initContent()
+{
     _aboutPage = new T_About();
     _settingPage = new T_Setting(this);
     _addDataBasePage = new T_AddDataBase(this);
@@ -118,12 +113,8 @@ void MainWindow::initContent(){
     _delDataBasePage = new T_DeleteDataBase(this);
     _delTablePage = new T_DeleteTable(this);
     _delFieldsPage = new T_DeleteField(this);
-    _tabWidget = new ElaTabWidget(this);
 
-    //-----------------------------------------------------------------------------------
-    //0.设置界面
     addFooterNode("Setting", _settingPage, _settingKey, 0, ElaIconType::GearComplex);
-    // 1.关于界面
     addFooterNode("About", nullptr, _aboutKey, 0, ElaIconType::User);
     _aboutPage->hide();
     connect(this, &ElaWindow::navigationNodeClicked, this, [=](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
@@ -135,54 +126,66 @@ void MainWindow::initContent(){
         }
     });
 
-    // 3.可视化编辑功能区
     QString fun_1_dis;
     QString fun_1_ddl;
     QString fun_1_dml;
     QString fun_2_add;
     QString fun_2_del;
     QString fun_2_alt;
-    //QString fun_3;
 
     addExpanderNode("功能操作", fun_1_ddl, ElaIconType::BullseyeArrow);
     addExpanderNode("查询", fun_1_dml, ElaIconType::CircleLocationArrow);
-    //-------------------------------------------------------------------------------------------
-    addExpanderNode("添加", fun_2_add, fun_1_ddl, ElaIconType::Plus); // 层级二
+    addExpanderNode("添加", fun_2_add, fun_1_ddl, ElaIconType::Plus);
     addExpanderNode("删除", fun_2_del, fun_1_ddl, ElaIconType::Minus);
     addExpanderNode("修改", fun_2_alt, fun_1_ddl, ElaIconType::Pencil);
-    //--------------------------------------------------------------------------------------------
-    addPageNode("添加数据库", _addDataBasePage, fun_2_add, ElaIconType::Database);   // 层级三
+
+    addPageNode("添加数据库", _addDataBasePage, fun_2_add, ElaIconType::Database);
     addPageNode("添加表", _addTablePage, fun_2_add, ElaIconType::Table);
     addPageNode("添加字段", _addFieldsPage, fun_2_add, ElaIconType::PenField);
-    // addPageNode("添加记录", new QWidget(this), fun_2_add, ElaIconType::ChartGantt);
-    // addPageNode("添加索引", new QWidget(this), fun_2_add, ElaIconType::Tags);
     addPageNode("删除数据库", _delDataBasePage, fun_2_del, ElaIconType::Database);
     addPageNode("删除表", _delTablePage, fun_2_del, ElaIconType::Table);
     addPageNode("删除字段", _delFieldsPage, fun_2_del, ElaIconType::PenField);
-    // addPageNode("删除记录", new QWidget(this), fun_2_del, ElaIconType::ChartGantt);
-    // addPageNode("删除索引", new QWidget(this), fun_2_del, ElaIconType::Tags);
-
 }
 
-
-// 假设 DataProcessor 接口
+// 假设 DataProcessor 接口（保持不变）
 class DataProcessor {
 public:
     static DataProcessor& GetInstance() { static DataProcessor instance; return instance; }
     int ShowDatabases(std::vector<std::string>& databases) {
-        databases = {"db1", "db2"}; // 替换为实际接口
+        databases = {"db1", "db2"};
         return 0;
     }
     int ShowTables(std::vector<std::string>& tables) {
-        tables = {"tb1", "tb2"}; // 替换为实际接口
+        tables = {"tb1", "tb2"};
         return 0;
     }
     int UseDatabase(const std::string& database) {
-        return 0; // 替换为实际接口
+        return 0;
     }
     std::vector<std::vector<std::string>> select_table(const std::string& database, const std::string& table) {
-        // 模拟实现，返回测试数据
-        return {{"id", "name", "value"}, {"1", "Alice", "100"}, {"2", "Bob", "200"}};
+        return {
+            {"id", "name", "age", "city", "salary", "department", "join_date", "status"},
+            {"1", "Alice", "25", "Beijing", "5000", "HR", "2023-01-15", "Active"},
+            {"2", "Bob", "30", "Shanghai", "6000", "IT", "2022-06-10", "Active"},
+            {"3", "Charlie", "35", "Guangzhou", "7500", "Finance", "2021-11-20", "Inactive"},
+            {"4", "David", "28", "Shenzhen", "5500", "Marketing", "2023-03-05", "Active"},
+            {"5", "Eve", "32", "Hangzhou", "7000", "IT", "2022-09-12", "Active"},
+            {"6", "Frank", "40", "Chengdu", "8000", "Finance", "2020-08-30", "Inactive"},
+            {"7", "Grace", "27", "Nanjing", "5200", "HR", "2023-04-18", "Active"},
+            {"8", "Hannah", "33", "Wuhan", "6500", "Marketing", "2022-07-25", "Active"},
+            {"9", "Ivy", "29", "Xi'an", "5800", "IT", "2023-02-14", "Inactive"},
+            {"10", "Jack", "36", "Chongqing", "7200", "Finance", "2021-12-01", "Active"},
+            {"11", "Kelly", "31", "Tianjin", "6300", "HR", "2022-10-05", "Active"},
+            {"12", "Liam", "34", "Changsha", "6900", "IT", "2021-05-22", "Inactive"},
+            {"13", "Mia", "26", "Fuzhou", "5100", "Marketing", "2023-06-30", "Active"},
+            {"14", "Noah", "38", "Qingdao", "7800", "Finance", "2020-09-15", "Active"},
+            {"15", "Olivia", "29", "Kunming", "5600", "HR", "2022-11-08", "Inactive"},
+            {"16", "Peter", "33", "Harbin", "6700", "IT", "2021-07-19", "Active"},
+            {"17", "Quinn", "27", "Xiamen", "5300", "Marketing", "2023-03-22", "Active"},
+            {"18", "Rose", "35", "Zhengzhou", "7100", "Finance", "2020-12-10", "Inactive"},
+            {"19", "Sam", "30", "Suzhou", "6400", "IT", "2022-04-15", "Active"},
+            {"20", "Tina", "32", "Dalian", "6800", "HR", "2021-08-25", "Active"}
+        };
     }
 };
 
@@ -190,7 +193,6 @@ void MainWindow::init_treeview(const QString& linkkey)
 {
     qDebug() << "Initializing tree view for connection:" << linkkey;
 
-    // 获取数据库列表
     std::vector<std::string> databases;
     int ret = DataProcessor::GetInstance().ShowDatabases(databases);
     if (ret != 0) {
@@ -199,15 +201,12 @@ void MainWindow::init_treeview(const QString& linkkey)
         return;
     }
 
-    // 遍历数据库
     for (const auto& db : databases) {
         QString dbKey;
         QString dbName = QString::fromStdString(db);
-        // 添加数据库节点（ExpanderNode）
         addExpanderNode(dbName, dbKey, linkkey, ElaIconType::Database);
         qDebug() << "Added database node:" << db << ", key:" << dbKey;
 
-        // 切换到该数据库
         ret = DataProcessor::GetInstance().UseDatabase(db);
         if (ret != 0) {
             qDebug() << "Error using database:" << db << ", error code:" << ret;
@@ -215,7 +214,6 @@ void MainWindow::init_treeview(const QString& linkkey)
             continue;
         }
 
-        // 获取表列表
         std::vector<std::string> tables;
         ret = DataProcessor::GetInstance().ShowTables(tables);
         if (ret != 0) {
@@ -224,34 +222,26 @@ void MainWindow::init_treeview(const QString& linkkey)
             continue;
         }
 
-        // 添加表节点（PageNode）
         for (const auto& tb : tables) {
             QString tbName = QString::fromStdString(tb);
-            QString tbKey = tbName + "_" + dbName; // Create a unique key, e.g., "tb1_db1"
-            // Use a placeholder QWidget or nullptr for navigation
+            QString tbKey = tbName + "_" + dbName;
             QWidget* tb_widget = new QWidget();
             addPageNode(tbName, tb_widget, dbKey, ElaIconType::Table);
-            // Save node information with tbKey
-            qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!property:" << tb_widget->property("ElaPageKey").toString();
-            // tb_widget->setProperty("ElaPageKey",tbKey);
-            // qDebug() << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!property:" << tb_widget->property("ElaPageKey").toString();
             QString nodeKey = tb_widget->property("ElaPageKey").toString();
             _nodeMap[nodeKey] = {dbName, tbName};
             qDebug() << "nodekey:" << nodeKey;
         }
     }
 
-    // 连接 navigationNodeClicked 信号
     connect(this, &MainWindow::navigationNodeClicked, this, [this](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
         qDebug() << "--------------------------------------------------------hello";
-
-        qDebug() << "type:" << nodeType ;
+        qDebug() << "type:" << nodeType;
         qDebug() << "key:" << nodeKey;
-
         onNavigationNodeClicked(nodeType, nodeKey);
     });
     qDebug() << "navigationNodeClicked signal connected";
 }
+
 void MainWindow::click_link_btn()
 {
     ElaDockWidget* connectWidget = new ElaDockWidget("新建连接", this);
@@ -263,7 +253,7 @@ void MainWindow::click_link_btn()
         QString linkKey;
         addExpanderNode(name, linkKey, ElaIconType::Link);
         _connectionNames.append(name);
-        init_treeview(linkKey); // 初始化树状结构
+        init_treeview(linkKey);
         qDebug() << "Connection created:" << name << ", linkKey:" << linkKey;
     });
 }
@@ -272,22 +262,19 @@ void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType n
 {
     qDebug() << "Navigation node clicked, type:" << nodeType << ", key:" << nodeKey;
 
-    // Only handle PageNode (table nodes)
     if (nodeType != ElaNavigationType::PageNode) {
         return;
     }
 
-    // Get database and table from _nodeMap
     if (!_nodeMap.contains(nodeKey)) {
         qDebug() << "Node key not found in _nodeMap:" << nodeKey;
         ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法找到表信息", 3000);
         return;
     }
 
-    QString database = _nodeMap[nodeKey].first; // Database name
-    QString table = _nodeMap[nodeKey].second;   // Table name
+    QString database = _nodeMap[nodeKey].first;
+    QString table = _nodeMap[nodeKey].second;
 
-    // Query data
     std::vector<std::vector<std::string>> tableData;
     try {
         tableData = DataProcessor::GetInstance().select_table(database.toStdString(), table.toStdString());
@@ -296,26 +283,55 @@ void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType n
             ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", QString("表 %1 为空").arg(table), 3000);
             return;
         }
-        for (const auto& row : tableData) {         // 遍历每一行
-            QString rowOutput;
-            for (const auto& cell : row) {          // 遍历行中的每个元素
-                rowOutput += cell + "\t";          // 用制表符分隔
-            }
-            qDebug().noquote() << rowOutput;        // 打印整行（避免引号）
-        }
     } catch (const std::exception& e) {
         qDebug() << "Error selecting table:" << table << ", exception:" << e.what();
         ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("查询表 %1 失败").arg(table), 3000);
         return;
     }
 
-    // Create T_TableView and display
-    T_TableView* tableView = new T_TableView(database, table, this);
-    tableView->dis_table(tableData);
+    // 获取与 nodeKey 关联的 QWidget
+    QWidget* targetWidget = nullptr;
+    const auto& nodes = findChildren<QWidget*>();
+    for (QWidget* widget : nodes) {
+        if (widget->property("ElaPageKey").toString() == nodeKey) {
+            targetWidget = widget;
+            break;
+        }
+    }
 
-    int index = _tabWidget->addTab(tableView, table);
-    _tabWidget->setCurrentIndex(index);
-    qDebug() << "Added tab for table:" << table << " at index:" << index;
+    if (!targetWidget) {
+        qDebug() << "Failed to find QWidget for nodeKey:" << nodeKey;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法找到对应的界面", 3000);
+        return;
+    }
+
+    // 清空目标 QWidget 的现有内容
+    if (targetWidget->layout()) {
+        QLayout* oldLayout = targetWidget->layout();
+        QLayoutItem* item;
+        while ((item = oldLayout->takeAt(0)) != nullptr) {
+            if (item->widget()) {
+                item->widget()->deleteLater();
+            }
+            delete item;
+        }
+        delete oldLayout;
+    }
+
+    // 创建新的 T_TableView 并设置数据
+    if (_currentTableView) {
+        _currentTableView->deleteLater();
+    }
+
+    // 传递表名到 T_TableView 构造函数
+    _currentTableView = new T_TableView(table, targetWidget);
+    _currentTableView->setTableData(tableData);
+
+    // 创建布局并将 T_TableView 添加到目标 QWidget
+    QVBoxLayout* layout = new QVBoxLayout(targetWidget);
+    layout->setContentsMargins(10, 10, 10, 10);
+    layout->addWidget(_currentTableView);
+    targetWidget->setLayout(layout);
 
     ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", QString("表 %1 已打开").arg(table), 2000);
     qDebug() << "Table opened:" << table;

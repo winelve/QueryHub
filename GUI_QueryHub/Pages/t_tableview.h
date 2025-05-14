@@ -1,24 +1,27 @@
-#ifndef T_TABLEVIEW_H
-#define T_TABLEVIEW_H
+#pragma once
 
-#include "t_basepage.h"
-#include "ElaTableView.h"
-#include "../modle/t_tableviewmodel.h"
+#include "T_BasePage.h"
+#include <QAbstractTableModel>
 #include <vector>
+
+class ElaTableView;
+class T_TableViewModel;
 
 class T_TableView : public T_BasePage
 {
     Q_OBJECT
 public:
-    explicit T_TableView(const QString& database, const QString& table, QWidget* parent = nullptr);
-    ~T_TableView();
-    void dis_table(const std::vector<std::vector<std::string>>& data);
+    explicit T_TableView(const QString& tableName = "", QWidget* parent = nullptr);
+    ~T_TableView() override;
+
+    // 设置表格数据
+    void setTableData(const std::vector<std::vector<std::string>>& data);
+
+    // 设置表名作为标题
+    void setTableTitle(const QString& title);
 
 private:
-    ElaTableView* _tableView;
-    T_TableViewModel* _model;
-    QString _database;
-    QString _table;
+    ElaTableView* _tableView{nullptr};
+    T_TableViewModel* _tableModel{nullptr};
+    QString _tableName; // 存储表名
 };
-
-#endif // T_TABLEVIEW_H
