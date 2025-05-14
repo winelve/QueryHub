@@ -6,7 +6,7 @@
 
 #include "constraint.h"
 
-// 主键：非空 且 唯一
+// 默认: 默认值
 class DefaultConstraint: public Constraint {
 
 public:

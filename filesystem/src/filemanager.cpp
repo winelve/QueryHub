@@ -46,21 +46,21 @@ int FileManager::WriteDatabasesFile(const std::vector<Database>& databases) {
     //采取截断式(若已存在则将其清空再写入)
     std::ofstream out("./data/databases.txt",std::ofstream::out | std::ofstream::trunc );
 
+    if(!out.is_open())
+        return -1;
 
-    if(out.is_open()) {
-        //输出数据库列表
+    //输出数据库列表
 
-        /** databases.txt
-         * 格式(例子):
-         * 2
-         * queryhub root
-         * man xt
-         */
+    /** databases.txt
+     * 格式(例子):
+     * 2
+     * queryhub root
+     * man xt
+     */
 
-        out << databases.size() << std::endl;
-        for(const auto & db : databases) {
-            out << db.GetDatabaseName() << " " << db.GetOwnerUser() <<  std::endl;
-        }
+    out << databases.size() << std::endl;
+    for(const auto & db : databases) {
+        out << db.GetDatabaseName() << " " << db.GetOwnerUser() <<  std::endl;
     }
 
     out.close();
@@ -87,7 +87,7 @@ int FileManager::WriteTablesFile(const std::string& databaseName,const std::vect
     std::ofstream out(path + "tables.txt",std::ofstream::out | std::ofstream::trunc );
 
     if (!out.is_open())
-        assert(false);
+        return -1;
 
     out << tables.size() << std::endl;
     for (const auto& table : tables)
@@ -173,7 +173,55 @@ int FileManager::WriteTablesFile(const std::string& databaseName,const std::vect
     return sSuccess;
 }
 
-int FileManager::WriteUsersFile(){
+int FileManager::WriteUsersFile(const std::vector<User>& users){
+    
+    Mkdir("./data");
+    
+    std::ofstream out("./data/users.txt",std::ofstream::out | std::ofstream::trunc );
+    
+    if(!out.is_open()) {
+        return -1;
+    }
+    
+    //处理字符串为空时改为NULL,表数据库中的空值
+    auto withNull = [&](const std::string& str)
+    {
+        if (str == "")
+            return "NULL";
+        else
+            return str.c_str();
+    };
+    
+    //写入
+    
+    // users.txt
+    
+    /** u.txt
+         *  2
+         *  110 hhh d 111 ddd 12 13
+         */
+    
+    out << users.size() << std::endl;
+    
+    //每个用户信息对应一行
+    for(const auto & user: users) {
+        //名字和密码
+        out << user.getUserName() << " " << user.getUserPassword() << " ";
+        
+        //权限数
+        out << user.getAuthorities().size() << " ";
+        
+        //权限详细
+        for(const auto & authority : user.getAuthorities()) {
+            out << withNull(authority.databaseName) << " " << withNull(authority.tableName) << " "
+                << authority.number << " ";
+        }
+
+        out << std::endl;
+    }
+    
+    
+    out.close();
     return sSuccess;
 }
 
@@ -186,16 +234,23 @@ int FileManager::ReadDatabasesFile(std::vector<Database>& databases){
     if(!in.is_open())
         assert(false);
 
+    std::cout << "db" << std::endl;
     //清空数据库
     int n;
     in >> n;
+
+    std::cout << n << std::endl;
     for(int i = 1; i <= n; i++) {
 
         std::string databaseName;
         std::string ownerUser;
-        std::cin >> databaseName >> ownerUser;
+        in >> databaseName >> ownerUser;
+
+        std::cout << databaseName << " " << ownerUser << std::endl;
         databases.push_back(Database(databaseName, ownerUser));
     }
+
+    std::cout << "dbOver" << std::endl;
 
     in.close();
 
@@ -228,6 +283,7 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
         tableNames.push_back(tableName);
     }
 
+    std::cout << tableNames.size() << std::endl;
 
     in.close();
 
@@ -258,6 +314,7 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
 
         in.close();
 
+        std::cout << fieldList.size() << std::endl;
         // tableNameRecords.txt
         in.open(path + tableName + "Records.txt", std::ifstream::in);
 
@@ -265,6 +322,7 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
             return -1;
 
         in >> n;
+
         //记录
         for (int i = 1; i <= n; i++)
         {
@@ -278,33 +336,26 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
                 record[name] =
                     sqlTool::TypeAndValueToAny(fieldMap[name], value);
             }
+
+
             records.push_back(record);
         }
 
+
+
         in.close();
 
+        std::cout << records.size() << std::endl;
 
-        // tableRecords.txt
-        in.open(path + tableName + "Records.txt", std::ifstream::in);
-        if (!in.is_open())
-            return -1;
 
-        in >> n;
-        for (int i = 1; i <= n; i++)
-        {
-            std::unordered_map<std::string, std::any> record;
-            std::string name;
-            std::string value;
-            in >> m;
-            for (int j = 1; j <= m; j++)
-            {
-                in >> name >> value;
-                record[name] =
-                    sqlTool::TypeAndValueToAny(fieldMap[name], value);
+        for (const auto& record : records) {
+            std::cout << "[";
+            // std::cout << record.size() << std::endl;
+            for (const auto& [name, value] : record) {
+                std::cout << name << ": " << sqlTool::AnyToString(value) << " ";
             }
-            records.push_back(record);
+            std::cout << "]    ";
         }
-        in.close();
 
         // tableNameConstraints.txt
         in.open(path + tableName + "Constraints.txt", std::ifstream::in);
@@ -363,11 +414,58 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
         }
         in.close();
 
+
+        std::cout << std::endl;
+
+
+        std::cout << constraints.size() << std::endl;
+        tables.push_back(Table(tableName, fieldList, constraints, records));
     }
 
     return sSuccess;
 }
 
-int FileManager::ReadUsersFile(){
+int FileManager::ReadUsersFile(std::vector<User>& users){
+
+    std::ifstream in("./data/users.txt", std::ifstream::in);
+
+    // 清空users表
+    users.clear();
+
+    if (!in.is_open())
+        return -1;
+
+    //数据库存储的NULL转为字符串时为""
+    auto makeNull = [&](std::string& str)
+    {
+        if (str == "NULL")
+            str = "";
+    };
+
+
+    int n;
+    in >> n;
+    for (int i = 1; i <= n; i++)
+    {
+        std::string name;
+        std::string password;
+        int m;
+        in >> name >> password >> m;
+        std::vector<Privilege> authorities;
+        authorities.resize(m);
+        for (int i = 0; i < m; i++)
+        {
+            Privilege authority;
+            int x;
+            in >> authority.databaseName >> authority.tableName >> x;
+            //转换形式
+            makeNull(authority.databaseName);
+            makeNull(authority.tableName);
+            authority.number = authorityNum(x);
+            authorities[i] = authority;
+        }
+        users.push_back(User(name, password, authorities));
+    }
+
     return sSuccess;
 }

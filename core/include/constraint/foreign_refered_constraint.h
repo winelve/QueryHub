@@ -6,11 +6,14 @@
 
 #include "constraint.h"
 
-// 主键：非空 且 唯一
+// 被外键引用约束：对应的字段名,约束名,依赖表名, 依赖字段名
 class ForeignReferedConstraint: public Constraint {
 
 public:
-    ForeignReferedConstraint(const std::string& fieldName, const std::string& constraintName, const std::string& referenceTableName, const std::string& referenceFieldName);
+    ForeignReferedConstraint(const std::string& fieldName,
+                             const std::string& constraintName,
+                             const std::string& referenceTableName,
+                             const std::string& referenceFieldName);
 
     std::string GetReferenceTableName() const;
 

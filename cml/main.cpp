@@ -1,96 +1,70 @@
 #include <QDebug>
+#include <QCoreApplication>
 
-#include "tokenizer.h"
-#include "interpreter.h"
+#include "parser.h"
+#include "executor.h"
+#include "dataprocessor.h"
+#include "server.h"
 #include "utils.h"
 
-void runQuery(Interpreter& interpreter, const QString& sql) {
-    qDebug() << "\n=== Executing: " << sql << " ===";
-    interpreter.interpret(sql);
-}
 
-void test_tokenizer() {
-    QString test_sql ="CREATE TABLE users (id INT, name VARCHAR(50));";
-    QString test_sql2 = "INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john@example.com');";
-    Tokenizer t;
-    t.init(test_sql2);
-    while (t.hasNextToken()) {
-        const auto token = t.getNextToken();
-        if (!token.isEmpty())
-            qDebug() << "{ type: " << token["type"] << ", value:" << token["value"] << "}";
+
+void test_sql() {
+    Parser p;
+    Executor e;
+    // QMap<QString,QList<QString>> test_sqls = p.test_sql_map();
+    QMap<QString, QList<QString>> test_sqls = {
+        {"CREATE", {
+                       "CREATE DATABASE test_db;",
+                       "USE test_db;",
+                       "CREATE TABLE users (id INT PRIMARY_KEY, name STRING, email STRING);",
+                       "CREATE TABLE orders (order_id INT PRIMARY_KEY, user_id INT, amount STRING);"
+                   }},
+        {"Other", {
+                    "USE test_db;",
+                    // "ALTER TABLE orders ADD CONSTRAINT user_id NOT_NULL;",
+                    // "ALTER TABLE orders DELETE CONSTRAINT user_id NOT_NULL;"
+                    // "ALTER TABLE orders RENAME COLUMN user_iddddddddd TO user_id;"
+                    // "INSERT INTO orders (order_id,user_id,amount) VALUES (1,233,900),(2,233,666),(3,234,444);",
+                    "SELECT (*) FROM orders ORDER BY (order_id);",
+                    "INSERT INTO orders (order_id,user_id,amount) VALUES (4,255,666);",
+                    "SELECT (*) FROM orders ORDER BY (order_id);",
+                    "DELETE orders WHERE (order_id=4);",
+                    "SELECT (*) FROM orders ORDER BY (order_id);",
+                    "SHOW TABLES;",
+                   }},
+    };
+
+    QStringList ss = {"Other"};
+    for(const auto&s: ss) {
+        qDebug() << "---------------" << s << "---------------";
+
+        for(auto& sql: test_sqls[s]) {
+            qDebug() << sql;
+            QJsonDocument send_doc;
+            QJsonObject ast_root = p.parse_sql(sql);
+            // printJs(ast_root);
+            int res = e.execute_ast(ast_root,send_doc);
+            qDebug() << "send_doc:";
+            qDebug() << send_doc;
+            qDebug() << "---> res:" << res;
+            qDebug() << "\n\n";
+        }
     }
 }
 
-void test_parser() {
 
-    // Example MySQL query
-    QString sql = "CREATE TABLE users (id INT, name VARCHAR(50));";
-    QString test_sql2 = "INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john@example.com');";
-    // QString sql3 = "ALTER students ;";
-    try {
-        Parser parser;
-        ASTNode* ast = parser.parse(sql);
-        qDebug() << "AST for query:" << sql;
-        printASTNode(ast,4);
-        delete ast;
-    } catch (const std::runtime_error& e) {
-        qDebug() << "Error parsing query:" << e.what();
-    }
+int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv); // Create the application with event loop
 
+    DataProcessor::GetInstance().Read(0);
+    DataProcessor::GetInstance().CreateUser("root","123456");
+    DataProcessor::GetInstance().Login("root","123456");
+
+    Server server(8080);             // Start server on port 8080
+    qDebug() << "Server is running...";
+
+    DataProcessor::GetInstance().Write();
+    return app.exec();               // Start the event loop
 }
 
-
-void test_query(){
-    Interpreter interpreter;
-    // Create a new table
-    runQuery(interpreter, "CREATE TABLE students (id INT, name TEXT, grade FLOAT, department TEXT);");
-
-    // Insert data into the table
-    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (1, 'John', 85.5, 'Computer Science');");
-    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (2, 'Emma', 92.0, 'Mathematics');");
-    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (3, 'Michael', 78.3, 'Physics');");
-    runQuery(interpreter, "INSERT INTO students (id, name, grade, department) VALUES (4, 'Sophia', 95.7, 'Computer Science');");
-
-    // Select all records from the table
-    runQuery(interpreter, "SELECT * FROM students;");
-
-
-}
-
-void test_query2(){
-    Interpreter interpreter;
-    // // Update records with WHERE condition
-    runQuery(interpreter, "UPDATE students SET grade = 88.0;");
-
-    // Verify the update
-    runQuery(interpreter, "SELECT * FROM students;");
-
-
-}
-
-void test_query3() {
-    Interpreter interpreter;
-
-    runQuery(interpreter, "DELETE FROM students WHERE id = 1;");
-    runQuery(interpreter, "SELECT * FROM students;");
-
-}
-void test_query4() {
-    Interpreter interpreter;
-
-    runQuery(interpreter,"DROP TABLE students;");
-    runQuery(interpreter, "SELECT * FROM students;");
-}
-
-int main() {
-
-    // test_tokenizer();
-    // test_parser();
-    // test_interpreter();
-    // test_query();
-    // test_query2();
-    // test_query3();
-    // test_query4();
-
-    return 0;
-}

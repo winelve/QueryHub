@@ -1,0 +1,158 @@
+{
+    "cmds":[
+        {
+            "cmd": "alter",
+            "rename": {
+                "database": {
+                    "func":["AlterDatabaseName"],
+                    "keys": ["name", "new_name"]
+                },
+                "table": {
+                    "func":["AlterTableName"],
+                    "keys": ["name", "new_name"]
+                },
+                "column": {
+                    "func":["AlterTableColumnName"],
+                    "keys": ["table_name", "column_name", "new_name"]
+                }
+            },
+            "add": {
+                "column": {
+                    "func": ["AlterTableAdd","AlterTableConstraint"],
+                    "keys": ["table_name", "columns"]
+                },
+                "constraint": {
+                    "func":["AlterTableConstraint"],
+                    "keys":["tb_name","cname","constraints"]
+                }
+            },
+            "modify": {
+                "column": {
+                    "func": ["AlterTableModify"],
+                    "keys": ["table_name", "column_name", "new_type"]
+                }
+            },
+            "drop": {
+                "column": {
+                    "func":["AlterTableDrop"],
+                    "keys": ["table_name", "column_name"]
+                },
+                "constraint": {
+                    "func":["AlterTableDeleteConstraint"],
+                    "keys":["tb_name","cname","cs_name"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "create",
+            "create": {
+                "database": {
+                    "func":["CreateDatabase"],
+                    "keys": ["name"]
+                },
+                "table": {
+                    "func":["CreateTable"],
+                    "keys": ["name", "columns"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "drop",
+            "drop": {
+                "database": {
+                    "func":["DeleteDatabase"],
+                    "keys": ["name"]
+                    
+                },
+                "table": {
+                    "func":["DropTable"],
+                    "keys": ["name"]
+                }
+            }
+        },
+
+        {
+            "cmd":"use",
+            "use": {
+                    "database": {
+                    "func": ["UseDatabase"],
+                    "keys": ["db_name"]
+                }
+            }
+
+        },
+        
+        {
+            "cmd":"show",
+            "show": {
+                "database": {
+						"func": ["ShowDatabases"],
+                     "keys": []
+                },
+                "table": {
+                    "func": ["ShowTables"],
+                    "keys": []
+                },
+                "constraints": {
+                    "func": ["ShowConstraints"],
+                    "keys": []
+                }
+            }
+        },
+        
+        {
+            "cmd":"desc",
+            "desc": {
+                "table": {
+                    "func":["DescribeTable"],
+                    "keys":["name"]
+                }
+            }
+        },
+
+        {
+            "cmd":"insert",
+            "insert": {
+                "table": {
+                    "func":["Insert"],
+                    "keys":["tb_name","columns","values"]
+                }
+            }
+        },
+
+        {
+            "cmd": "select",
+            "select": {
+                "table":{
+                    "func":["Select"],
+                    "keys":["tables","select_columns","where","order_by"]
+                }
+            }
+        },
+
+        {
+            "cmd":"update",
+            "update": {
+                "table":{
+                    "func":["Update"],
+                    "keys":["tb_name","set_values","where"]
+                }
+            }
+        },
+
+        {
+            "cmd": "delete",
+            "delete": {
+                "table": {
+                    "func":["Delete"],
+                    "keys":["tb_name","where"]
+                }
+                
+            }
+        }
+
+
+    ]
+}
