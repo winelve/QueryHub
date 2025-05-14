@@ -1,7 +1,6 @@
 #include "T_TableView.h"
 #include <QVBoxLayout>
 #include <QHeaderView>
-#include "ElaText.h"
 #include "ElaMessageBar.h"
 #include <QDebug>
 
@@ -14,9 +13,6 @@ T_TableView::T_TableView(const QString& database, const QString& table, QWidget*
     // 顶部元素
     createCustomWidget("");
 
-    // ElaTableView
-    ElaText* tableText = new ElaText("ElaTableView", this);
-    tableText->setTextPixelSize(18);
     _tableView = new ElaTableView(this);
     _model = new T_TableViewModel(this);
     _tableView->setModel(_model);
@@ -44,10 +40,8 @@ T_TableView::T_TableView(const QString& database, const QString& table, QWidget*
     centralWidget->setWindowTitle(table);
     QVBoxLayout* centerVLayout = new QVBoxLayout(centralWidget);
     centerVLayout->setContentsMargins(0, 0, 0, 0);
-    centerVLayout->addWidget(tableText);
-    centerVLayout->addSpacing(10);
     centerVLayout->addLayout(tableViewLayout);
-    addCentralWidget(centralWidget, true, false, 0);
+    addCentralWidget(centralWidget, true, true, 0);
 }
 
 T_TableView::~T_TableView()
