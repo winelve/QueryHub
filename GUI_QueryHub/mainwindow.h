@@ -2,6 +2,7 @@
 
 #include <QMap>
 #include <QPair>
+#include "client/client.h"
 #include "ElaToolButton.h"
 #include "ElaWindow.h"
 #include "Pages/t_about.h"
@@ -16,6 +17,7 @@
 #include "Pages/t_setting.h"
 #include "Pages/t_tableview.h"
 #include "Pages/t_select.h"
+
 class T_About;
 class T_Setting;
 class T_AddDataBase;
@@ -28,6 +30,7 @@ class T_ConnectPage;
 class T_TableView;
 class T_Select;
 class ElaPushButton;
+class Client;
 
 class MainWindow : public ElaWindow
 {
@@ -36,23 +39,24 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
-private slots:
-    void click_link_btn();
-    void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
-    // void onRunButtonClicked();
-    void init_treeview(const QString& linkkey);
-
 private:
     void initWindow();
     void initEdgeLayout();
     void initContent();
-
-    //点击事件
     void click_run_btn();
+    void click_link_btn();
+    void init_treeview(const QString& parentKey);
+    void refreshConnectionTree(const QString& nodeKey);
+    void onlinkNodeClicked(QString nodeKey);
 
+
+private slots:
+    void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
+    void refreshAllConnections();
+
+private:
     T_About* _aboutPage{nullptr};
     T_Setting* _settingPage{nullptr};
-    T_ConnectPage* _connectPage{nullptr};
     T_AddDataBase* _addDataBasePage{nullptr};
     T_AddTable* _addTablePage{nullptr};
     T_AddFields* _addFieldsPage{nullptr};
@@ -60,13 +64,14 @@ private:
     T_DeleteTable* _delTablePage{nullptr};
     T_DeleteField* _delFieldsPage{nullptr};
     T_Select* _selectPage{nullptr};
-    T_TableView* _currentTableView{nullptr};
-
-    QString _settingKey;
-    QString _aboutKey;
-    QStringList _connectionNames;
-
-    QMap<QString, QPair<QString, QString>> _nodeMap;
-
     ElaToolButton* run_btn{nullptr};
+
+    QString _aboutKey;
+    QMap<QString, QPair<QString, QString>> _nodeMap;
+    QMap<QString, QString> linkkey_map;
+    QVector<QString> _connectionNames;
+    QMap<QString, Client*> clients_map_;
+
+    // 新增：记录每个连接节点的子节点
+    QMap<QString, QStringList> _childNodesMap; // 映射：linkKey -> 子节点 nodeKey 列表
 };

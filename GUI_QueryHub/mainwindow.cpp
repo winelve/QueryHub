@@ -22,70 +22,13 @@
 #include "Pages/t_connectpage.h"
 #include "Pages/t_tableview.h"
 
-// 模拟后端接口函数（仅用于测试）
-QJsonArray handle_sql(const QString& sql) {
-    // 模拟后端返回的数据
-    QJsonArray resultArray;
-
-    // 模拟第一个查询结果
-    QJsonObject result1;
-    result1["code"] = "200";
-    result1["func"] = "select";
-    QJsonArray data1;
-    QJsonArray header1;
-    header1.append("id");
-    header1.append("name");
-    header1.append("age");
-    header1.append("city");
-    QJsonArray row1;
-    row1.append("1");
-    row1.append("Alice");
-    row1.append("25");
-    row1.append("Beijing");
-    QJsonArray row2;
-    row2.append("2");
-    row2.append("Bob");
-    row2.append("30");
-    row2.append("Shanghai");
-    data1.append(header1);
-    data1.append(row1);
-    data1.append(row2);
-    result1["data"] = data1;
-    resultArray.append(result1);
-
-    // 模拟第二个查询结果
-    QJsonObject result2;
-    result2["code"] = "200";
-    result2["func"] = "select";
-    QJsonArray data2;
-    QJsonArray header2;
-    header2.append("product_id");
-    header2.append("product_name");
-    header2.append("price");
-    QJsonArray row3;
-    row3.append("101");
-    row3.append("Laptop");
-    row3.append("1200");
-    QJsonArray row4;
-    row4.append("102");
-    row4.append("Phone");
-    row4.append("800");
-    data2.append(header2);
-    data2.append(row3);
-    data2.append(row4);
-    result2["data"] = data2;
-    resultArray.append(result2);
-
-    return resultArray;
-}
-
 MainWindow::MainWindow(QWidget* parent)
     : ElaWindow(parent)
 {
     initWindow();
     initEdgeLayout();
     initContent();
-    this->setIsDefaultClosed(true);
+    setIsDefaultClosed(true);
     moveToCenter();
     click_run_btn();
 }
@@ -93,6 +36,9 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow()
 {
     delete _aboutPage;
+    for (auto client : clients_map_) {
+        delete client;
+    }
 }
 
 void MainWindow::initWindow()
@@ -100,9 +46,9 @@ void MainWindow::initWindow()
     setWindowIcon(QIcon(":/resource/images/icon.png"));
     resize(1200, 740);
     setUserInfoCardPixmap(QPixmap(":/resource/images/icon.png"));
-    setUserInfoCardTitle("QureyHub");
+    setUserInfoCardTitle("QueryHub");
     setUserInfoCardSubTitle("https://github.com/winelve/QueryHub.git");
-    setWindowTitle("QureyHub");
+    setWindowTitle("QueryHub");
 }
 
 void MainWindow::initEdgeLayout()
@@ -121,40 +67,13 @@ void MainWindow::initEdgeLayout()
     run_btn = new ElaToolButton(this);
     run_btn->setElaIcon(ElaIconType::Play);
     toolBar->addWidget(run_btn);
-    toolBar->addSeparator();
 
-    ElaToolButton* toolButton3 = new ElaToolButton(this);
-    toolButton3->setElaIcon(ElaIconType::Bluetooth);
-    toolButton3->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toolButton3->setText("Bluetooth");
-    toolBar->addWidget(toolButton3);
-    ElaToolButton* toolButton4 = new ElaToolButton(this);
-    toolButton4->setElaIcon(ElaIconType::BringFront);
-    toolBar->addWidget(toolButton4);
+    ElaToolButton* refresh_btn = new ElaToolButton(this);
+    refresh_btn->setElaIcon(ElaIconType::ArrowRotateRight);
+    toolBar->addWidget(refresh_btn);
+    connect(refresh_btn, &ElaToolButton::clicked, this, &MainWindow::refreshAllConnections);
+
     toolBar->addSeparator();
-    ElaToolButton* toolButton5 = new ElaToolButton(this);
-    toolButton5->setElaIcon(ElaIconType::ChartSimple);
-    toolBar->addWidget(toolButton5);
-    ElaToolButton* toolButton6 = new ElaToolButton(this);
-    toolButton6->setElaIcon(ElaIconType::FaceClouds);
-    toolBar->addWidget(toolButton6);
-    ElaToolButton* toolButton8 = new ElaToolButton(this);
-    toolButton8->setElaIcon(ElaIconType::Aperture);
-    toolBar->addWidget(toolButton8);
-    ElaToolButton* toolButton9 = new ElaToolButton(this);
-    toolButton9->setElaIcon(ElaIconType::ChartMixed);
-    toolBar->addWidget(toolButton9);
-    ElaToolButton* toolButton10 = new ElaToolButton(this);
-    toolButton10->setElaIcon(ElaIconType::Coins);
-    toolBar->addWidget(toolButton10);
-    ElaToolButton* toolButton11 = new ElaToolButton(this);
-    toolButton11->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toolButton11->setElaIcon(ElaIconType::AlarmPlus);
-    toolButton11->setText("AlarmPlus");
-    toolBar->addWidget(toolButton11);
-    ElaToolButton* toolButton12 = new ElaToolButton(this);
-    toolButton12->setElaIcon(ElaIconType::Crown);
-    toolBar->addWidget(toolButton12);
 
     ElaProgressBar* progressBar = new ElaProgressBar(this);
     progressBar->setMinimum(0);
@@ -162,7 +81,7 @@ void MainWindow::initEdgeLayout()
     progressBar->setFixedWidth(350);
     toolBar->addWidget(progressBar);
 
-    this->addToolBar(Qt::TopToolBarArea, toolBar);
+    addToolBar(Qt::TopToolBarArea, toolBar);
 }
 
 void MainWindow::initContent()
@@ -177,15 +96,21 @@ void MainWindow::initContent()
     _delFieldsPage = new T_DeleteField(this);
     _selectPage = new T_Select(this);
 
-    addFooterNode("Setting", _settingPage, _settingKey, 0, ElaIconType::GearComplex);
+    QString footerKey;
+    addFooterNode("Setting", _settingPage, footerKey, 0, ElaIconType::GearComplex);
     addFooterNode("About", nullptr, _aboutKey, 0, ElaIconType::User);
     _aboutPage->hide();
+
     connect(this, &ElaWindow::navigationNodeClicked, this, [=](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
-        if (_aboutKey == nodeKey)
-        {
+        qDebug() << "Navigation node clicked, type:" << nodeType << ", key:" << nodeKey;
+        if (_aboutKey == nodeKey) {
             _aboutPage->setFixedSize(575, 400);
             _aboutPage->moveToCenter();
             _aboutPage->show();
+        } else if (nodeType == ElaNavigationType::PageNode) {
+            onNavigationNodeClicked(nodeType, nodeKey);
+        } else {
+            qDebug() << "Ignoring non-PageNode click, key:" << nodeKey;
         }
     });
 
@@ -210,155 +135,106 @@ void MainWindow::initContent()
 
 void MainWindow::click_run_btn()
 {
-    // 连接 run_btn 点击事件
     connect(run_btn, &ElaToolButton::clicked, this, [this]() {
-        // 确保 _selectPage 已初始化
         if (!_selectPage) {
             ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "查询页面未初始化!", 3000);
             return;
         }
 
-        // 获取 SQL 输入
         QString sql = _selectPage->getQueryText().trimmed();
         if (sql.isEmpty()) {
             ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "请输入 SQL 查询语句!", 3000);
             return;
         }
 
-        // 重置查询结果
-        _selectPage->resetResults();
+        if (clients_map_.isEmpty()) {
+            ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无可用连接!", 3000);
+            return;
+        }
 
-        // 调用后端接口
-        QJsonArray results = handle_sql(sql);
+        _selectPage->resetResults();
+        Client* client = clients_map_.begin().value();
+        QJsonArray results = client->handle_sql(sql);
         if (results.isEmpty()) {
             ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "查询结果为空!", 3000);
             return;
         }
 
-        // 解析每个查询结果
         for (const QJsonValue& resultValue : results) {
             QJsonObject resultObj = resultValue.toObject();
             QString code = resultObj["code"].toString();
-            QString func = resultObj["func"].toString();
-            QJsonArray data = resultObj["data"].toArray();
+            QJsonValue dataValue = resultObj["data"];
 
-            if (code != "200") {
+            if (code != "200" && code != "0") {
                 ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("查询失败，状态码: %1").arg(code), 3000);
                 continue;
             }
 
-            // 将 QJsonArray 转换为 std::vector<std::vector<std::string>>
-            std::vector<std::vector<std::string>> tableData;
-            for (const QJsonValue& rowValue : data) {
-                QJsonArray rowArray = rowValue.toArray();
-                std::vector<std::string> row;
-                for (const QJsonValue& cell : rowArray) {
-                    row.push_back(cell.toString().toStdString());
+            if (dataValue.isArray()) {
+                QJsonArray dataArray = dataValue.toArray();
+                if (dataArray.isEmpty()) {
+                    ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "查询结果为空!", 3000);
+                    continue;
                 }
-                tableData.push_back(row);
-            }
 
-            // 调用 T_Select::executeQuery() 处理单次查询结果
-            _selectPage->executeQuery(tableData);
+                if (dataArray[0].isString()) {
+                    std::vector<std::vector<std::string>> tableData;
+                    for (const QJsonValue& val : dataArray) {
+                        tableData.push_back({val.toString().toStdString()});
+                    }
+                    _selectPage->executeQuery(tableData);
+                } else if (dataArray[0].isArray()) {
+                    std::vector<std::vector<std::string>> tableData;
+                    qDebug() << "Raw JSON data:" << dataArray;
+
+                    for (const QJsonValue& rowValue : dataArray) {
+                        QJsonArray rowArray = rowValue.toArray();
+                        std::vector<std::string> row;
+
+                        for (const QJsonValue& cell : rowArray) {
+                            if (cell.isNull()) {
+                                row.push_back("NULL");
+                            } else if (cell.isString()) {
+                                row.push_back(cell.toString().toStdString());
+                            } else if (cell.isDouble()) {
+                                double val = cell.toDouble();
+                                if (val == std::floor(val)) {
+                                    row.push_back(std::to_string(static_cast<int>(val)));
+                                } else {
+                                    row.push_back(std::to_string(val));
+                                }
+                            } else {
+                                row.push_back("UNKNOWN_TYPE");
+                            }
+                        }
+                        tableData.push_back(row);
+                    }
+
+                    qDebug() << "Processed tableData:";
+                    for (const auto& row : tableData) {
+                        QStringList rowData;
+                        for (const auto& cell : row) {
+                            rowData << QString::fromStdString(cell);
+                        }
+                        qDebug() << rowData.join(" | ");
+                    }
+
+                    _selectPage->executeQuery(tableData);
+                } else {
+                    ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "不支持的数据格式!", 3000);
+                    continue;
+                }
+            } else if (dataValue.isString()) {
+                std::vector<std::vector<std::string>> tableData = {{dataValue.toString().toStdString()}};
+                _selectPage->executeQuery(tableData);
+            } else {
+                ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "未知的数据类型!", 3000);
+                continue;
+            }
         }
 
         ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", "查询执行成功!", 2000);
     });
-}
-
-// 假设 DataProcessor 接口（保持不变）
-class DataProcessor {
-public:
-    static DataProcessor& GetInstance() { static DataProcessor instance; return instance; }
-    int ShowDatabases(std::vector<std::string>& databases) {
-        databases = {"db1", "db2"};
-        return 0;
-    }
-    int ShowTables(std::vector<std::string>& tables) {
-        tables = {"tb1", "tb2"};
-        return 0;
-    }
-    int UseDatabase(const std::string& database) {
-        return 0;
-    }
-    std::vector<std::vector<std::string>> select_table(const std::string& database, const std::string& table) {
-        return {
-            {"id", "name", "age", "city", "salary", "department", "join_date", "status"},
-            {"1", "Alice", "25", "Beijing", "5000", "HR", "2023-01-15", "Active"},
-            {"2", "Bob", "30", "Shanghai", "6000", "IT", "2022-06-10", "Active"},
-            {"3", "Charlie", "35", "Guangzhou", "7500", "Finance", "2021-11-20", "Inactive"},
-            {"4", "David", "28", "Shenzhen", "5500", "Marketing", "2023-03-05", "Active"},
-            {"5", "Eve", "32", "Hangzhou", "7000", "IT", "2022-09-12", "Active"},
-            {"6", "Frank", "40", "Chengdu", "8000", "Finance", "2020-08-30", "Inactive"},
-            {"7", "Grace", "27", "Nanjing", "5200", "HR", "2023-04-18", "Active"},
-            {"8", "Hannah", "33", "Wuhan", "6500", "Marketing", "2022-07-25", "Active"},
-            {"9", "Ivy", "29", "Xi'an", "5800", "IT", "2023-02-14", "Inactive"},
-            {"10", "Jack", "36", "Chongqing", "7200", "Finance", "2021-12-01", "Active"},
-            {"11", "Kelly", "31", "Tianjin", "6300", "HR", "2022-10-05", "Active"},
-            {"12", "Liam", "34", "Changsha", "6900", "IT", "2021-05-22", "Inactive"},
-            {"13", "Mia", "26", "Fuzhou", "5100", "Marketing", "2023-06-30", "Active"},
-            {"14", "Noah", "38", "Qingdao", "7800", "Finance", "2020-09-15", "Active"},
-            {"15", "Olivia", "29", "Kunming", "5600", "HR", "2022-11-08", "Inactive"},
-            {"16", "Peter", "33", "Harbin", "6700", "IT", "2021-07-19", "Active"},
-            {"17", "Quinn", "27", "Xiamen", "5300", "Marketing", "2023-03-22", "Active"},
-            {"18", "Rose", "35", "Zhengzhou", "7100", "Finance", "2020-12-10", "Inactive"},
-            {"19", "Sam", "30", "Suzhou", "6400", "IT", "2022-04-15", "Active"},
-            {"20", "Tina", "32", "Dalian", "6800", "HR", "2021-08-25", "Active"}
-        };
-    }
-};
-
-void MainWindow::init_treeview(const QString& linkkey)
-{
-    qDebug() << "Initializing tree view for connection:" << linkkey;
-
-    std::vector<std::string> databases;
-    int ret = DataProcessor::GetInstance().ShowDatabases(databases);
-    if (ret != 0) {
-        qDebug() << "Error loading databases, error code:" << ret;
-        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法加载数据库列表！", 3000);
-        return;
-    }
-
-    for (const auto& db : databases) {
-        QString dbKey;
-        QString dbName = QString::fromStdString(db);
-        addExpanderNode(dbName, dbKey, linkkey, ElaIconType::Database);
-        qDebug() << "Added database node:" << db << ", key:" << dbKey;
-
-        ret = DataProcessor::GetInstance().UseDatabase(db);
-        if (ret != 0) {
-            qDebug() << "Error using database:" << db << ", error code:" << ret;
-            ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法使用数据库 %1").arg(QString::fromStdString(db)), 3000);
-            continue;
-        }
-
-        std::vector<std::string> tables;
-        ret = DataProcessor::GetInstance().ShowTables(tables);
-        if (ret != 0) {
-            qDebug() << "Error loading tables for database:" << db << ", error code:" << ret;
-            ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("无法加载数据库 %1 的表").arg(QString::fromStdString(db)), 3000);
-            continue;
-        }
-
-        for (const auto& tb : tables) {
-            QString tbName = QString::fromStdString(tb);
-            QString tbKey = tbName + "_" + dbName;
-            QWidget* tb_widget = new QWidget();
-            addPageNode(tbName, tb_widget, dbKey, ElaIconType::Table);
-            QString nodeKey = tb_widget->property("ElaPageKey").toString();
-            _nodeMap[nodeKey] = {dbName, tbName};
-            qDebug() << "nodekey:" << nodeKey;
-        }
-    }
-
-    connect(this, &MainWindow::navigationNodeClicked, this, [this](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
-        qDebug() << "--------------------------------------------------------hello";
-        qDebug() << "type:" << nodeType;
-        qDebug() << "key:" << nodeKey;
-        onNavigationNodeClicked(nodeType, nodeKey);
-    });
-    qDebug() << "navigationNodeClicked signal connected";
 }
 
 void MainWindow::click_link_btn()
@@ -368,23 +244,141 @@ void MainWindow::click_link_btn()
     connectWidget->setWidget(_connectPage);
     addDockWidget(Qt::RightDockWidgetArea, connectWidget);
     resizeDocks({connectWidget}, {200}, Qt::Horizontal);
-    connect(_connectPage, &T_ConnectPage::connectionCreated, this, [this](const QString& name) {
+
+    connect(_connectPage, &T_ConnectPage::connectionCreated, this, [this, _connectPage](const QString& name) {
+        QVector<QString> s = _connectPage->getLinkMember();
+        QString link_name = s[0];
+        QString host = s[1];
+        QString port = s[2];
+        QString user_name = s[3];
+        QString password = s[4];
+        qDebug() << "host:" << host;
+        qDebug() << "port:" << port;
+
+        if (clients_map_.contains(link_name)) {
+            ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", QString("连接名 %1 已存在!").arg(link_name), 2500, this);
+            return;
+        }
+
+        Client* client = new Client();
+        if (!client->connectToServer(host, port.toInt())) {
+            qDebug() << "连接失败";
+            ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", "创建连接失败!", 2500, this);
+            delete client;
+            return;
+        }
+
+        clients_map_[link_name] = client;
         QString linkKey;
-        addExpanderNode(name, linkKey, ElaIconType::Link);
-        _connectionNames.append(name);
-        init_treeview(linkKey);
-        qDebug() << "Connection created:" << name << ", linkKey:" << linkKey;
+        ElaNavigationType::NodeOperateReturnType link_return_page = addExpanderNode(link_name, linkKey, ElaIconType::Link);
+        QString parentKey = linkKey;
+        if (link_return_page == ElaNavigationType::Success) {
+            linkkey_map[parentKey] = link_name;
+            qDebug() << "link_name" << link_name;
+            qDebug() << "linkkey_map[parentKey]:" << linkkey_map[parentKey];
+            _connectionNames.append(link_name);
+            init_treeview(linkKey);
+            ElaMessageBar::success(ElaMessageBarType::Bottom, "成功", "创建连接成功!", 2500, this);
+            qDebug() << "连接成功！";
+        } else {
+            delete client;
+            clients_map_.remove(link_name);
+            linkkey_map.remove(parentKey);
+            ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", "添加连接节点失败!", 2500, this);
+        }
     });
+}
+
+void MainWindow::init_treeview(const QString& parentKey)
+{
+    qDebug() << "Initializing tree view for connection under parentKey:" << parentKey;
+
+    QString linkName = linkkey_map.value(parentKey, "");
+    qDebug() << "linkName:" << linkName;
+
+    if (linkName.isEmpty() || !clients_map_.contains(linkName)) {
+        qDebug() << "Connection not found for parentKey:" << parentKey;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "连接未找到！", 3000);
+        return;
+    }
+
+    Client* client = clients_map_[linkName];
+
+    std::vector<std::string> databases = client->get_all_database();
+    if (databases.empty()) {
+        qDebug() << "No databases found for connection:" << linkName;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "无可用数据库！", 3000);
+        return;
+    }
+
+    // 初始化子节点列表
+    QStringList childNodes;
+    if (_childNodesMap.contains(parentKey)) {
+        childNodes = _childNodesMap[parentKey];
+        qDebug() << "Existing child nodes for" << parentKey << ":" << childNodes;
+    } else {
+        _childNodesMap[parentKey] = QStringList();
+    }
+
+    for (const auto& db : databases) {
+        QString dbKey;
+        QString dbName = QString::fromStdString(db);
+        ElaNavigationType::NodeOperateReturnType result = addExpanderNode(dbName, dbKey, parentKey, ElaIconType::Database);
+        if (result == ElaNavigationType::Success) {
+            qDebug() << "Added database node:" << db << ", key:" << dbKey;
+            _childNodesMap[parentKey].append(dbKey); // 记录数据库节点
+
+            std::vector<std::string> tables = client->get_all_tables(db);
+            if (tables.empty()) {
+                qDebug() << db << "-数据库中没找到表！";
+                continue;
+            }
+
+            for (const auto& tb : tables) {
+                QString tbName = QString::fromStdString(tb);
+                QWidget* tb_widget = new QWidget();
+                ElaNavigationType::NodeOperateReturnType tbResult = addPageNode(tbName, tb_widget, dbKey, ElaIconType::Table);
+                if (tbResult == ElaNavigationType::Success) {
+                    QString nodeKey = tb_widget->property("ElaPageKey").toString();
+                    _nodeMap[nodeKey] = {dbName, tbName};
+                    _childNodesMap[parentKey].append(nodeKey); // 记录表节点
+                    qDebug() << "Added table node:" << tb << ", nodeKey:" << nodeKey;
+                } else {
+                    qDebug() << "Failed to add table node:" << tb << ", result:" << tbResult;
+                    delete tb_widget; // 防止内存泄漏
+                }
+            }
+        } else {
+            qDebug() << "Failed to add database node:" << db << ", result:" << result;
+        }
+    }
+
+    qDebug() << "Updated child nodes for" << parentKey << ":" << _childNodesMap[parentKey];
+}
+
+void MainWindow::refreshConnectionTree(const QString& nodeKey)
+{
+    if (!linkkey_map.contains(nodeKey)) {
+        qDebug() << "Node key is not a connection node:" << nodeKey;
+        return;
+    }
+
+    QString linkName = linkkey_map[nodeKey];
+    qDebug() << "Refreshing connection tree for:" << linkName;
+
+    if (!clients_map_.contains(linkName)) {
+        qDebug() << "Connection not found:" << linkName;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "连接未找到!", 3000);
+        return;
+    }
+
+    init_treeview(nodeKey);
+
+    ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", QString("连接 %1 已刷新").arg(linkName), 2000);
 }
 
 void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey)
 {
-    qDebug() << "Navigation node clicked, type:" << nodeType << ", key:" << nodeKey;
-
-    if (nodeType != ElaNavigationType::PageNode) {
-        return;
-    }
-
     if (!_nodeMap.contains(nodeKey)) {
         qDebug() << "Node key not found in _nodeMap:" << nodeKey;
         ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法找到表信息", 3000);
@@ -394,21 +388,28 @@ void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType n
     QString database = _nodeMap[nodeKey].first;
     QString table = _nodeMap[nodeKey].second;
 
-    std::vector<std::vector<std::string>> tableData;
-    try {
-        tableData = DataProcessor::GetInstance().select_table(database.toStdString(), table.toStdString());
-        if (tableData.empty()) {
-            qDebug() << "No data returned for table:" << table;
-            ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", QString("表 %1 为空").arg(table), 3000);
-            return;
+    Client* client = nullptr;
+    for (const auto& name : _connectionNames) {
+        std::vector<std::string> dbs = clients_map_[name]->get_all_database();
+        if (std::find(dbs.begin(), dbs.end(), database.toStdString()) != dbs.end()) {
+            client = clients_map_[name];
+            break;
         }
-    } catch (const std::exception& e) {
-        qDebug() << "Error selecting table:" << table << ", exception:" << e.what();
-        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", QString("查询表 %1 失败").arg(table), 3000);
+    }
+
+    if (!client) {
+        qDebug() << "Client not found for database:" << database;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无法找到对应的连接", 3000);
         return;
     }
 
-    // 获取与 nodeKey 关联的 QWidget
+    std::vector<std::vector<std::string>> tableData = client->select_table(database.toStdString(), table.toStdString());
+    if (tableData.empty()) {
+        qDebug() << "No data returned for table:" << table;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", QString("表 %1 为空").arg(table), 3000);
+        return;
+    }
+
     QWidget* targetWidget = nullptr;
     const auto& nodes = findChildren<QWidget*>();
     for (QWidget* widget : nodes) {
@@ -424,7 +425,6 @@ void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType n
         return;
     }
 
-    // 清空目标 QWidget 的现有内容
     if (targetWidget->layout()) {
         QLayout* oldLayout = targetWidget->layout();
         QLayoutItem* item;
@@ -437,21 +437,85 @@ void MainWindow::onNavigationNodeClicked(ElaNavigationType::NavigationNodeType n
         delete oldLayout;
     }
 
-    // 创建新的 T_TableView 并设置数据
-    if (_currentTableView) {
-        _currentTableView->deleteLater();
-    }
+    T_TableView* tableView = new T_TableView(table, targetWidget);
+    tableView->setTableData(tableData);
 
-    // 传递表名到 T_TableView 构造函数
-    _currentTableView = new T_TableView(table, targetWidget);
-    _currentTableView->setTableData(tableData);
-
-    // 创建布局并将 T_TableView 添加到目标 QWidget
     QVBoxLayout* layout = new QVBoxLayout(targetWidget);
     layout->setContentsMargins(10, 10, 10, 10);
-    layout->addWidget(_currentTableView);
+    layout->addWidget(tableView);
     targetWidget->setLayout(layout);
 
     ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", QString("表 %1 已打开").arg(table), 2000);
-    qDebug() << "Table opened:" << table;
+}
+
+void MainWindow::onlinkNodeClicked(QString nodeKey)
+{
+    qDebug() << "-----------------------------------------------------------------Link node clicked, key:" << nodeKey;
+
+    if (!linkkey_map.contains(nodeKey)) {
+        qDebug() << "Invalid connection node key:" << nodeKey;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "无效的连接节点！", 3000);
+        return;
+    }
+
+    QString linkName = linkkey_map[nodeKey];
+    qDebug() << "Refreshing connection:" << linkName;
+
+    if (!clients_map_.contains(linkName)) {
+        qDebug() << "Connection not found:" << linkName;
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "错误", "连接未找到！", 3000);
+        return;
+    }
+
+    // 清理与该连接相关的 _nodeMap 条目
+    QMap<QString, QPair<QString, QString>> newNodeMap;
+    for (auto it = _nodeMap.constBegin(); it != _nodeMap.constEnd(); ++it) {
+        QString dbName = it.value().first;
+        bool belongsToConnection = false;
+        for (const auto& name : _connectionNames) {
+            if (name == linkName) {
+                std::vector<std::string> dbs = clients_map_[name]->get_all_database();
+                if (std::find(dbs.begin(), dbs.end(), dbName.toStdString()) != dbs.end()) {
+                    belongsToConnection = true;
+                    break;
+                }
+            }
+        }
+        if (!belongsToConnection) {
+            newNodeMap.insert(it.key(), it.value());
+        }
+    }
+    _nodeMap = newNodeMap;
+
+    // 清理 _childNodesMap 中的子节点记录
+    if (_childNodesMap.contains(nodeKey)) {
+        QStringList childNodes = _childNodesMap[nodeKey];
+        qDebug() << "Clearing child nodes for" << nodeKey << ":" << childNodes;
+        _childNodesMap[nodeKey].clear();
+    } else {
+        _childNodesMap[nodeKey] = QStringList();
+    }
+
+    // 重建导航树
+    init_treeview(nodeKey);
+
+    ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", QString("连接 %1 已刷新").arg(linkName), 2000);
+}
+
+void MainWindow::refreshAllConnections()
+{
+    qDebug() << "Refreshing all connections";
+
+    if (linkkey_map.isEmpty()) {
+        ElaMessageBar::warning(ElaMessageBarType::TopRight, "警告", "无可用连接！", 3000);
+        return;
+    }
+
+    for (auto it = linkkey_map.constBegin(); it != linkkey_map.constEnd(); ++it) {
+        QString nodeKey = it.key();
+        qDebug() << "Processing connection nodeKey:" << nodeKey;
+        onlinkNodeClicked(nodeKey);
+    }
+
+    ElaMessageBar::success(ElaMessageBarType::TopRight, "成功", "所有连接已刷新！", 2000);
 }

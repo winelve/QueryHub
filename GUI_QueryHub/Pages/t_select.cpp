@@ -10,6 +10,7 @@
 #include <QHeaderView>
 #include <QFontMetrics>
 #include <ElaTabWidget.h>
+#include "ElaText.h"
 
 // 行号区域实现
 LineNumberArea::LineNumberArea(QPlainTextEdit* editor) : QWidget(editor), codeEditor(editor) {
@@ -120,28 +121,22 @@ T_Select::T_Select(QWidget* parent)
     , _resultTabs(new ElaTabWidget(this))
     , _resultCount(0)
 {
-    // 设置描述文本
     createCustomWidget("查询界面");
 
-    // 主容器
     QWidget* centralWidget = new QWidget(this);
     centralWidget->setWindowTitle("查询");
 
-    // 主布局
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->setContentsMargins(40, 40, 40, 40); // 设置边距
-    mainLayout->setSpacing(30); // 设置组件间距
+    mainLayout->setContentsMargins(40, 40, 40, 40);
+    mainLayout->setSpacing(30);
 
-    // 添加输入区域和结果展示区域到主布局
     mainLayout->addWidget(_queryEdit);
     mainLayout->addWidget(_resultTabs);
 
-    // 设置样式和属性
     _queryEdit->setPlaceholderText("请输入 SQL 查询语句...");
-    _queryEdit->setMinimumHeight(200); // 设置编辑区域高度
+    _queryEdit->setMinimumHeight(200);
     _resultTabs->setTabPosition(QTabWidget::North);
 
-    // 将主容器添加到页面
     addCentralWidget(centralWidget, true, true, 0);
 }
 
@@ -156,13 +151,11 @@ QString T_Select::getQueryText() const
 
 void T_Select::resetResults()
 {
-    // 清除所有标签页
     while (_resultTabs->count() > 0) {
         QWidget* widget = _resultTabs->widget(0);
         _resultTabs->removeTab(0);
         delete widget;
     }
-    // 重置计数器
     _resultCount = 0;
 }
 
@@ -173,72 +166,87 @@ void T_Select::executeQuery(const std::vector<std::vector<std::string>>& tableDa
         return;
     }
 
-    // 创建新的表格
     _resultCount++;
     QWidget* tabWidget = new QWidget(_resultTabs);
     tabWidget->setWindowTitle(QString("查询%1").arg(_resultCount));
 
-    // 创建 ElaTableView 和模型
-    ElaTableView* tableView = new ElaTableView(tabWidget);
-    T_TableViewModel* tableModel = new T_TableViewModel(tabWidget);
-    tableView->setModel(tableModel);
-
-    // 配置表格属性
-    tableView->setAlternatingRowColors(true);
-    tableView->setIconSize(QSize(32, 32));
-    tableView->verticalHeader()->setHidden(false);
-    tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    tableView->setSelectionMode(QAbstractItemView::SingleSelection);
-    tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    tableView->setShowGrid(true);
-    tableView->setGridStyle(Qt::SolidLine);
-
-    // 设置字体
-    QFont tableHeaderFont = tableView->horizontalHeader()->font();
-    tableHeaderFont.setPixelSize(16);
-    tableHeaderFont.setBold(true);
-    tableView->horizontalHeader()->setFont(tableHeaderFont);
-    tableView->verticalHeader()->setFont(tableHeaderFont);
-
-    // 设置最小尺寸
-    tableView->horizontalHeader()->setMinimumSectionSize(80);
-    tableView->verticalHeader()->setMinimumSectionSize(30);
-    tableView->setMinimumHeight(800);
-
-    // 设置表格数据
-    tableModel->setData(tableData);
-
-    // 动态调整列宽（参考 T_TableView::setTableData）
-    QFontMetrics fontMetrics(tableView->font());
-    const int padding = 20; // 额外的内边距
-    for (int col = 0; col < tableModel->columnCount(); ++col) {
-        int maxWidth = 0;
-        for (size_t row = 0; row < tableData.size(); ++row) {
-            QString text = QString::fromStdString(tableData[row][col]);
-            int textWidth = fontMetrics.horizontalAdvance(text);
-            maxWidth = std::max(maxWidth, textWidth);
-        }
-        int adjustedWidth = maxWidth + padding;
-        tableView->setColumnWidth(col, adjustedWidth);
-    }
-
-    // 为 join_date 列（假设索引 6）设置固定宽度
-    if (!tableData.empty() && tableData[0].size() > 6) {
-        tableView->setColumnWidth(6, 120);
-    }
-
-    // 布局
-    QHBoxLayout* tableViewLayout = new QHBoxLayout();
-    tableViewLayout->setContentsMargins(10, 10, 10, 10);
-    tableViewLayout->addWidget(tableView);
-
     QVBoxLayout* tabLayout = new QVBoxLayout(tabWidget);
     tabLayout->setContentsMargins(15, 15, 15, 15);
     tabLayout->setSpacing(10);
-    tabLayout->addLayout(tableViewLayout);
-    tabLayout->addStretch();
 
-    // 添加到标签页
+    // 检查数据是否为表格格式（多列）或单列/字符串
+    if (tableData[0].size() > 1) { // 假设多列表示表格数据
+        // 创建 ElaTableView 和模型
+        ElaTableView* tableView = new ElaTableView(tabWidget);
+        T_TableViewModel* tableModel = new T_TableViewModel(tabWidget);
+        tableView->setModel(tableModel);
+
+        // 配置表格属性
+        tableView->setAlternatingRowColors(true);
+        tableView->setIconSize(QSize(32, 32));
+        tableView->verticalHeader()->setHidden(false);
+        tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+        tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+        tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        tableView->setShowGrid(true);
+        tableView->setGridStyle(Qt::SolidLine);
+
+        QFont tableHeaderFont = tableView->horizontalHeader()->font();
+        tableHeaderFont.setPixelSize(16);
+        tableHeaderFont.setBold(true);
+        tableView->horizontalHeader()->setFont(tableHeaderFont);
+        tableView->verticalHeader()->setFont(tableHeaderFont);
+
+        tableView->horizontalHeader()->setMinimumSectionSize(80);
+        tableView->verticalHeader()->setMinimumSectionSize(30);
+        tableView->setMinimumHeight(800);
+
+        // 设置表格数据
+        tableModel->setData(tableData);
+
+        // 动态调整列宽
+        QFontMetrics fontMetrics(tableView->font());
+        const int padding = 20;
+        for (int col = 0; col < tableModel->columnCount(); ++col) {
+            int maxWidth = 0;
+            for (size_t row = 0; row < tableData.size(); ++row) {
+                QString text = QString::fromStdString(tableData[row][col]);
+                int textWidth = fontMetrics.horizontalAdvance(text);
+                maxWidth = std::max(maxWidth, textWidth);
+            }
+            int adjustedWidth = maxWidth + padding;
+            tableView->setColumnWidth(col, adjustedWidth);
+        }
+
+        if (!tableData.empty() && tableData[0].size() > 6) {
+            tableView->setColumnWidth(6, 120);
+        }
+
+        QHBoxLayout* tableViewLayout = new QHBoxLayout();
+        tableViewLayout->setContentsMargins(10, 10, 10, 10);
+        tableViewLayout->addWidget(tableView);
+        tabLayout->addLayout(tableViewLayout);
+    }
+    else { // 单列或字符串，使用 ElaText 显示
+        QString text;
+        for (const auto& row : tableData) {
+            text += QString::fromStdString(row[0]) + "\n";
+        }
+
+        ElaText* resultText = new ElaText(tabWidget);
+        resultText->setText(text.trimmed());
+        resultText->setFont(QFont("Microsoft YaHei", 12));
+
+        QHBoxLayout* textLayout = new QHBoxLayout();
+        textLayout->setContentsMargins(10, 10, 10, 10);
+        textLayout->addWidget(resultText);
+        tabLayout->addLayout(textLayout);
+    }
+
+    tabLayout->addStretch();
     _resultTabs->addTab(tabWidget, QString("结果%1").arg(_resultCount));
+
+    // 确保切换到最新 Tab
+    _resultTabs->setCurrentIndex(_resultTabs->count() - 1);
 }

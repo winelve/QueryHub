@@ -119,12 +119,12 @@ void T_ConnectPage::initConnections()
             return;
         }
 
+
         //这里可以修改连接成功的判断条件----------------------------------------------------------------------------------------
         if(!connectionName.isEmpty()&&!host.isEmpty()&&!port.isEmpty()&&!username.isEmpty()
             &&!password.isEmpty()){
-            link_status = true;
+            link_member = {connectionName,host,port,username,password};
             emit connectionCreated(connectionName);
-            ElaMessageBar::success(ElaMessageBarType::Bottom, "成功", "创建连接成功!", 2500, this);
         }
     });
 
