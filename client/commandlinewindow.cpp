@@ -130,7 +130,40 @@ void CommandLineWindow::processInput() {
 
     // 处理SQL命令
     else if (isConnected) {
-        QJsonArray result = client->handle_sql(input);
+        QString sqlCommand;
+
+        // 检查输入是否以"sql"或"exec"等指令开头
+        if (input.startsWith("sql ", Qt::CaseInsensitive)) {
+            QStringList parts = input.split(' ', Qt::SkipEmptyParts);
+            if (parts.size() < 2) {
+                appendToOutput("Error: Missing file path after SQL command.");
+                showCommandPrompt();
+                return;
+            }
+
+            QString filePath = parts[1];
+            sqlCommand = read_sql_file(filePath);
+
+            if (sqlCommand.isEmpty()) {
+                appendToOutput("Error: Failed to read SQL file or file is empty.");
+                showCommandPrompt();
+                return;
+            }
+        } else {
+            // 不是SQL文件指令，直接作为SQL命令
+            sqlCommand = input;
+        }
+
+        // 清理SQL命令
+        sqlCommand = sqlCommand.trimmed();
+
+        if (sqlCommand.isEmpty()) {
+            appendToOutput("Error: SQL command is empty.");
+            showCommandPrompt();
+            return;
+        }
+
+        QJsonArray result = client->handle_sql(sqlCommand);
         displayResult(result);
         showCommandPrompt();
     }
@@ -512,4 +545,16 @@ void CommandLineWindow::handleOthers(const QString& funcName, const QJsonValue& 
     }
 }
 
+QString CommandLineWindow::read_sql_file(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Could not open file:" << path;
+        return QString();
+    }
+    QTextStream in(&file);
+    in.setEncoding(QStringConverter::Utf8);
+    QString content = in.readAll();
+    file.close();
+    return content;
+}
 
