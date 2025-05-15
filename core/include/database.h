@@ -68,6 +68,9 @@ public:
     //更新(修改)记录
     int Update(const std::string& tableName,const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions);
     int Delete(const std::string& tableName,const std::vector<std::tuple<std::string, std::string, int>>& conditions);   //删除记录
+//Index
+    int BuildIndex(const std::string& tableName,const std::string& fieldName);
+    int DestroyIndex(const std::string& tableName,const std::string& fieldName);
 };
 
 #endif // DATABASE_H
