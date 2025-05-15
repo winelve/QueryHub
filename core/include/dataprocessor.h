@@ -61,10 +61,10 @@ public:
     int UpdateConstraintMap();
     int AlterTableAdd(std::string tableName, std::pair<std::string, std::string> field);//修改表结构,增加字段
     int AlterTableDrop(std::string tableName, std::string fieldName);          //删除字段
-    int AlterTableModify(std::string tableName, std::pair<std::string, std::string> field); //修改字段内容
+    int AlterTableModify(std::string tableName, std::pair<std::string, std::string> field); //修改字段内容(类型修改)
     int AlterTableColumnName(std::string tableName, std::string columnName, std::string newColumnName);//修改列名
     int AlterTableConstraint(std::string tableName, Constraint* constraint);    //添加约束条件
-    int AlterTableDeleteConstraint(std::string tableName, std::string constraintName); ///删除约束
+    int AlterTableDeleteConstraint(std::string tableName, std::string constraintName); //删除约束
     int ShowConstraints(std::vector<std::vector<std::any>>& retRecords);
 //表DML操作
     int Select(std::string tableName,
@@ -82,7 +82,10 @@ public:
     int Update(const std::string& tableName,const std::vector<std::pair<std::string, std::string>>& values, const std::vector<std::tuple<std::string, std::string, int>>& conditions);   //更新(修改)记录
 
     int Delete(const std::string& tableName,const std::vector<std::tuple<std::string, std::string, int>>& conditions);   //删除记录
-    int Index(); // 索引
+//Index
+    int BuildIndex(const std::string& tableName,const std::string& fieldName);
+    int DestroyIndex(const std::string& tableName,const std::string& fieldName);
+
 //文件操作
     int Write();//写入
     int Read(bool isPrint);//读取
@@ -95,7 +98,7 @@ public:
 
     int GrantAuthority(const std::string& userName, const std::string& databaseName,const std::string& tableName,const std::string& authority) ;//授予权限
 
-    int RevokeDatabaseOwner(const std::string& databaseName);//(只有root能进行)收回用户数据库所有权
+    int RevokeDatabaseOwner(const std::string& databaseName, const std::string& userName = "");//(只有root能进行)收回用户数据库所有权
 
     int RevokeAuthority(const std::string& userName, const std::string& databaseName,const std::string& tableName,const std::string& authority) ;//收回权限
 
