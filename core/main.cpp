@@ -330,7 +330,8 @@ void testDML() {
     std::vector<std::pair<std::string, std::string>> values;
     // records.push_back(std::pair<std::string,std::string>("name", "wqy"));
     // records.push_back(std::pair<std::string,std::string>("id", "1001"));
-    values.push_back(std::pair<std::string,std::string>("Sname", "WYQ"));
+    values.push_back(std::pair<std::string,std::string>("Sname", "wyq"));
+    // values.push_back(std::pair<std::string,std::string>("Sname", "WYQ"));
 
     std::vector<std::tuple<std::string, std::string, int>> conditions1;
     conditions1.push_back(std::tuple<std::string, std::string, int>("Sno", "23301076", sEqualCondition));
