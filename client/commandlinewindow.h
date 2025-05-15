@@ -42,6 +42,8 @@ private:
     void handleDescribeTable(const QJsonArray& data);
     void handleSelect(const QJsonArray& data);
     void handleOthers(const QString& funcName, const QJsonValue& data);
+    //读取sql脚本
+    QString read_sql_file(const QString& path);
 };
 
 #endif // COMMANDLINEWINDOW_H
