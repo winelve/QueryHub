@@ -39,6 +39,7 @@ public:
 private slots:
     void click_link_btn();
     void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
+    // void onRunButtonClicked();
     void init_treeview(const QString& linkkey);
 
 private:
