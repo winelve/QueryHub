@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Network)
+
 
 set(PROJECT_SOURCES
         main.cpp
@@ -65,11 +67,19 @@ endif()
 
 include_directories(
     include
+    ${CMAKE_SOURCE_DIR}/../client # 使用相对路径访问client目录
 )
 
 target_link_libraries(GUI_QueryHub PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/libElaWidgetTools.a
 )
+target_link_libraries(GUI_QueryHub PUBLIC Qt6::Network)
+
+
+# 如果存在client库，则添加链接
+if(TARGET client)
+    target_link_libraries(GUI_QueryHub PRIVATE client)
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
