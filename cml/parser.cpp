@@ -22,8 +22,8 @@ QList<QString> Parser::split_sqls(const QString& sqls) {
 
 QJsonObject Parser::parse_sql(const QString &_sql){
 
-    QString sql = _sql.toLower();
-    QString first_keyword = parse_first_word_(sql);
+    QString sql = _sql;
+    QString first_keyword = parse_first_word_(sql).toLower();
     qDebug() << "first_keyword: " << first_keyword;
 
     QJsonObject ast_root;
@@ -48,6 +48,12 @@ QJsonObject Parser::parse_sql(const QString &_sql){
         {"select",&dml_parser},
         {"update",&dml_parser},
         {"delete",&dml_parser},
+        {"commit",&other_parser},
+        {"rollback",&other_parser},
+        {"login",&other_parser},
+        {"register",&other_parser},
+        {"grant",&other_parser},
+        {"revoke",&other_parser},
     };
 
     auto it = cmd_parsers.find(first_keyword);

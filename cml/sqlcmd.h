@@ -84,22 +84,47 @@ private:
         QStringLiteral("^CREATE\\s+DATABASE\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
-    const QRegularExpression createTablePattern{
-        QStringLiteral("^CREATE\\s+TABLE\\s+(\\w+)\\s*\\(\\s*([\\s\\S]*?)\\s*\\)\\s*;"),
+    const QRegularExpression createIndexPattern{
+        QStringLiteral("^CREATE\\s+INDEX\\s+ON\\s+(\\w+)\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
 
+    // const QRegularExpression createTablePattern{
+    //     QStringLiteral("^CREATE\\s+TABLE\\s+(\\w+)\\s*\\(\\s*([\\s\\S]*?)\\s*\\)\\s*;"),
+    //     QRegularExpression::CaseInsensitiveOption
+    // };
+
+    // const QRegularExpression columnPattern{
+    //     QStringLiteral("^(\\w+)\\s+(\\w+)\\s*((?:\\s+\\w+(?:\\([^)]*\\))?)*?)(?=\\s*,|\\s*$)"),
+    //     QRegularExpression::CaseInsensitiveOption
+    // };
+
+    // // 可以添加一个新的正则表达式来匹配单个约束
+    // const QRegularExpression constraintPattern{
+    //     QStringLiteral("\\b(\\w+)(?:\\(([^)]+)\\))?"),
+    //     QRegularExpression::CaseInsensitiveOption
+    // };
+    //-------------------------------------------------------
+    // 第一个正则保持不变
+    const QRegularExpression createRegex{
+        QStringLiteral("^CREATE TABLE\\s+(?<tableName>\\w+)\\s*\\((?<columnsDefinitionStr>.*?)\\)\\s*;$"),
+        QRegularExpression::CaseInsensitiveOption // 忽略大小写
+    };
+
+    // 修改第二个正则，处理新的外键语法
     const QRegularExpression columnPattern{
-        QStringLiteral("^(\\w+)\\s+(\\w+)\\s*((?:\\s+\\w+(?:\\([^)]*\\))?)*?)(?=\\s*,|\\s*$)"),
-        QRegularExpression::CaseInsensitiveOption
+        QStringLiteral("^\\s*(?<colName>\\w+)\\s+(?<colType>\\w+)(?<constraintsStr>(?:\\s+(?:primary_key|foregin_key\\s*\\([^)]*\\)|default\\s*\\([^)]*\\)|not_null|unique))*)\\s*$")
     };
 
-    // 可以添加一个新的正则表达式来匹配单个约束
+    // 修改第三个正则，处理新的外键语法（没有逗号）
     const QRegularExpression constraintPattern{
-        QStringLiteral("\\b(\\w+)(?:\\(([^)]+)\\))?"),
-        QRegularExpression::CaseInsensitiveOption
+        QStringLiteral("(?<pk>primary_key)|"                                          // primary_key
+                       "(?<fk>foregin_key)\\s*\\(\\s*(?<fkTable>\\w+)\\s+(?<fkColumn>\\w+)\\s*\\)|" // foregin_key(ref_tb ref_column)
+                       "(?<def>default)\\s*\\(\\s*(?<defValue>[^)]+)\\s*\\)|"         // default(value) - value 可以是 'string' 或数字等
+                       "(?<nn>not_null)|"                                             // not_null
+                       "(?<uq>unique)")                                               // unique
     };
+
 
 };
 
@@ -119,6 +144,11 @@ private:
 
     const QRegularExpression dropDatabasePattern{
         QStringLiteral("^DROP\\s+DATABASE\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression dropIndexPattern{
+        QStringLiteral("^DROP\\s+INDEX\\s+ON\\s+(\\w+)\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
 
@@ -203,32 +233,72 @@ class OtherCmdParser : public BaseCmdParser
 {
 public:
     QJsonObject parseCMD(const QString &sql) override;
-
     QList<QString> test_other_re = {
         "USE my_db;",
         "SHOW DATABASES;",
         "SHOW TABLES;",
         "DESCRIBE users;"
     };
-
 private:
     const QRegularExpression useDbPattern{
         QStringLiteral("^USE\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression showDatabasesPattern{
         QStringLiteral("^SHOW\\s+DATABASES\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression showTablesPattern{
         QStringLiteral("^SHOW\\s+TABLES\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
-
     const QRegularExpression describeTablePattern{
         QStringLiteral("^DESC\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+    //--------------------------最后10个-----------------------------------
+    const QRegularExpression commitPattern{
+        QStringLiteral("^COMMIT\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression rollbackPattern{
+        QStringLiteral("^ROLLBACK\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression loginPattern{
+        QStringLiteral("^LOGIN\\s+(\\w+)\\s+P\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression registerPattern{
+        QStringLiteral("^REGISTER\\s+(\\w+)\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression dropIndexPattern{
+        QStringLiteral("^DROP\\s+INDEX\\s+ON\\s+(\\w+)\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression grantOwnerPattern{
+        QStringLiteral("^GRANT\\s+OWNER\\s+ON\\s+(\\w+)\\s+TO\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression revokeOwnerPattern{
+        QStringLiteral("^REVOKE\\s+OWNER\\s+ON\\s+(\\w+)(?:\\s+FROM\\s+(\\w+))?\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression grantPattern{
+        QStringLiteral("^GRANT\\s+\\(?([\\w\\*,]+)\\)?\\s+ON\\s+\\(?([\\w\\*]+)\\.([\\w\\*]+)\\)?\\s+TO\\s+(\\w+)\\s*;"),
+        QRegularExpression::CaseInsensitiveOption
+    };
+
+    const QRegularExpression revokePattern{
+        QStringLiteral("^REVOKE\\s+\\(?([\\w\\*,]+)\\)?\\s+ON\\s+\\(?([\\w\\*]+)\\.([\\w\\*]+)\\)?\\s+FROM\\s+(\\w+)\\s*;"),
         QRegularExpression::CaseInsensitiveOption
     };
 };

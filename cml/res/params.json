@@ -54,7 +54,11 @@
                 "table": {
                     "func":["CreateTable"],
                     "keys": ["name", "columns"]
-                }
+                },
+                "index": {
+                    "func": ["BuildIndex"],
+                    "keys": ["tb_name", "cname"]
+            	}  
             }
         },
         
@@ -69,6 +73,10 @@
                 "table": {
                     "func":["DropTable"],
                     "keys": ["name"]
+                },
+                "index": {
+                    "func": ["DestroyIndex"],
+                    "keys": ["tb_name", "cname"]
                 }
             }
         },
@@ -76,7 +84,7 @@
         {
             "cmd":"use",
             "use": {
-                    "database": {
+                "database": {
                     "func": ["UseDatabase"],
                     "keys": ["db_name"]
                 }
@@ -88,8 +96,8 @@
             "cmd":"show",
             "show": {
                 "database": {
-						"func": ["ShowDatabases"],
-                     "keys": []
+					"func": ["ShowDatabases"],
+                    "keys": []
                 },
                 "table": {
                     "func": ["ShowTables"],
@@ -151,7 +159,77 @@
                 }
                 
             }
+        }, 
+
+                {
+            "cmd": "commit",
+            "commit": {
+                "database": {
+                    "func": ["Write"],
+                    "keys": []
+                }
+            }
+        },
+        
+        {
+            "cmd": "rollback",
+            "rollback": {
+                "database": {
+                    "func": ["Read"],
+                    "keys": []
+                }
+            }
+        },
+    
+    
+        {
+            "cmd": "login",
+            "login": {
+                "database": {
+                    "func": ["Login"],
+                    "keys": ["username", "pwd"]
+                }
+            }
+        },
+        
+        {
+          	"cmd": "register",
+            "register": {
+                "user": {
+                    "func":["CreateUser"],
+                    "keys":["username","pwd"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "grant",
+            "grant": {
+                "database": {
+                    "func": ["GrantDatabaseOwner"],
+                    "keys": ["db_name", "username"]
+                },
+                "table": {
+                    "func": ["GrantAuthority"],
+                    "keys": [ "username", "db_name", "tb_name","power"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "revoke",
+            "revoke": {
+                "database": {
+                    "func": ["RevokeDatabaseOwner"],
+                    "keys": ["db_name", "username"]
+                },
+                "table": {
+                    "func": ["RevokeAuthority"],
+                    "keys": ["username", "db_name", "tb_name", "power"]
+                }
+            }
         }
+        
 
 
     ]

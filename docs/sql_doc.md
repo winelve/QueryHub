@@ -66,6 +66,10 @@ CREATE TABLE table_name (
     column3 datatype ,
     ...
 );
+
+// -------------------
+CREATE TABLE student (id int primary_key, age string, sex string default(m), classname string);
+
 ```
 
 例如：

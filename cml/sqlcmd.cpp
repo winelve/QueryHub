@@ -18,71 +18,104 @@ QJsonObject CreateParser::parseCMD(const QString &sql) {
         ast_data["op"] = "create";
         ast_data["name"] = db_name;
 
-    } else if ((match=createTablePattern.match(sql)).hasMatch()) {
-        QString table_name = match.captured(1);
-        QString column_str = match.captured(2);
-        ast_data["object"] = "table";
+    }
+    // CREATE INDEX
+    else if ((match = createIndexPattern.match(sql)).hasMatch()) {
+        ast_data["object"] = "index";
         ast_data["op"] = "create";
+        ast_data["tb_name"] = match.captured(1);
+        ast_data["cname"] = match.captured(2);
+    }
+
+    else if ((match=createRegex.match(sql)).hasMatch()) {
+        // 从 mainRegex 的命名捕获组中获取表名和列定义字符串
+        QString table_name = match.captured("tableName");
+        QString columns_definition_string = match.captured("columnsDefinitionStr");
+
+        ast_data["object"] = "table";
         ast_data["name"] = table_name;
-        QJsonArray columns_data;
-        QStringList c_defs = column_str.split(",",Qt::SkipEmptyParts);
+        ast_data["op"] = "create"; // 根据您的JSON输出示例，此字段不包含
 
-        for(const auto& def: c_defs){
-            QRegularExpressionMatch column_match = columnPattern.match(def.trimmed());
+        QJsonArray columns_data_array; // 用于存储所有列的JSON对象
+        QStringList column_definition_parts = columns_definition_string.split(',', Qt::SkipEmptyParts);
+        QString accumulatedErrorLog;
 
-            // 如果信息格式不正确
-            if(!column_match.hasMatch()) {
-                ast_data["status"] = "error";
-                ast_data["error_log"] = ast_data["error_log"].toString() + "Create didn't match column: >>" + def + "<<\n";
-                continue;
+        // 2. 遍历每个列定义部分
+        for (const QString& single_column_def_str : column_definition_parts) {
+            QString trimmed_column_def = single_column_def_str.trimmed();
+            if (trimmed_column_def.isEmpty()) continue;
+
+            QRegularExpressionMatch column_match_result = columnPattern.match(trimmed_column_def);
+
+            // 检查列定义是否匹配，并且基本部分（名称和类型）已捕获
+            if (!column_match_result.hasMatch() || column_match_result.captured(1).isEmpty() || column_match_result.captured(2).isEmpty()) {
+                QString errorMsg = "Create statement error: Column definition format incorrect for part: >>" + trimmed_column_def + "<<\n";
+                accumulatedErrorLog += errorMsg;
+                qWarning() << errorMsg.trimmed();
+                continue; // 跳过格式不正确的列定义
             }
 
-            // 将信息提取
-            QJsonObject column_js;
-            column_js["cname"] = column_match.captured(1);
-            column_js["ctype"] = column_match.captured(2);
+            QJsonObject column_json_obj;
+            column_json_obj["cname"] = column_match_result.captured(1); // 列名
+            column_json_obj["ctype"] = column_match_result.captured(2); // 列类型
 
-            // 解析约束条件
-            QString constraints_str = column_match.captured(3).trimmed();
-            if (!constraints_str.isEmpty()) {
-                QJsonArray constraints_array;
-                // 迭代匹配所有约束
-                QRegularExpressionMatchIterator constraint_matches =
-                    constraintPattern.globalMatch(constraints_str);
+            QString raw_constraints_string = column_match_result.captured(3).trimmed(); // 原始约束字符串
+            QJsonArray constraints_json_array; // 用于存储当前列的所有约束
 
-                while (constraint_matches.hasNext()) {
-                    QRegularExpressionMatch constraint_match = constraint_matches.next();
-                    QJsonObject constraint_obj;
+            // 3. 如果存在约束字符串，则解析约束
+            if (!raw_constraints_string.isEmpty()) {
+                QRegularExpressionMatchIterator constraint_iterator =
+                    constraintPattern.globalMatch(raw_constraints_string);
 
-                    QString constraint_name = constraint_match.captured(1);
-                    QString params_str = constraint_match.captured(2); // 可能为空
+                while (constraint_iterator.hasNext()) {
+                    QRegularExpressionMatch current_constraint_match = constraint_iterator.next();
+                    QJsonObject constraint_json_obj;
 
-                    constraint_obj["csname"] = constraint_name;
-
-                    // 处理参数
-                    if (!params_str.isEmpty()) {
-                        QJsonArray params_array;
-                        QStringList params = params_str.split(",", Qt::SkipEmptyParts);
-
-                        for (const auto& param : params) {
-                            params_array.append(param.trimmed());
-                        }
-
-                        constraint_obj["csparams"] = params_array;
-                    } else {
-                        constraint_obj["csparams"] = QJsonArray();
+                    // 检查哪种约束被匹配到
+                    if (current_constraint_match.captured("pk").isEmpty() == false) {
+                        constraint_json_obj["csname"] = "primary_key";
+                    }
+                    else if (current_constraint_match.captured("fk").isEmpty() == false) {
+                        constraint_json_obj["csname"] = "foregin_key";
+                        QJsonArray params_for_json_array;
+                        params_for_json_array.append(current_constraint_match.captured("fkTable").trimmed());
+                        params_for_json_array.append(current_constraint_match.captured("fkColumn").trimmed());
+                        constraint_json_obj["params"] = params_for_json_array;
+                    }
+                    else if (current_constraint_match.captured("def").isEmpty() == false) {
+                        constraint_json_obj["csname"] = "default";
+                        QJsonArray params_for_json_array;
+                        params_for_json_array.append(current_constraint_match.captured("defValue").trimmed());
+                        constraint_json_obj["params"] = params_for_json_array;
+                    }
+                    else if (current_constraint_match.captured("nn").isEmpty() == false) {
+                        constraint_json_obj["csname"] = "not_null";
+                    }
+                    else if (current_constraint_match.captured("uq").isEmpty() == false) {
+                        constraint_json_obj["csname"] = "unique";
                     }
 
-                    constraints_array.append(constraint_obj);
+                    // 如果没有参数，添加空的参数数组
+                    if (!constraint_json_obj.contains("params")) {
+                        constraint_json_obj["params"] = QJsonArray();
+                    }
+                    constraints_json_array.append(constraint_json_obj);
                 }
-                column_js["constraints"] = constraints_array;
-            } else {
-                column_js["constraints"] = QJsonArray();
             }
-            // 添加到JsonArray
-            columns_data.append(column_js);
+            column_json_obj["constraints"] = constraints_json_array; // 即使没有约束，也添加空的 constraints 数组
+            columns_data_array.append(column_json_obj);
         }
-        ast_data["columns"] = columns_data;
+
+        ast_data["columns"] = columns_data_array;
+
+        // 如果在解析列定义时出现错误，则添加错误信息
+        if (!accumulatedErrorLog.isEmpty()) {
+            ast_data["status"] = "error";
+            ast_data["error_log"] = accumulatedErrorLog.trimmed();
+        }
+    } else {
+        ast_data["status"] = "error";
+        ast_data["error_log"] = "can't parser create cmd";
     }
     return ast_data;
 }
@@ -107,7 +140,15 @@ QJsonObject DropParser::parseCMD(const QString& sql){
         ast_data["object"] = "database";
         ast_data["op"] = "drop";
         ast_data["name"] = db_name;
-    } else {
+    }
+    // DROP INDEX
+    else if ((match = dropIndexPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "drop";
+        ast_data["object"] = "index";
+        ast_data["tb_name"] = match.captured(1);
+        ast_data["cname"] = match.captured(2);
+    }
+    else {
         ast_data["status"] = "error";
         ast_data["error_log"] = ast_data["error_log"].toString() + "Drop did't match : >>" + sql + "<<\n";
     }
@@ -513,7 +554,6 @@ QJsonObject DMLParser::parseCMD(const QString &sql) {
 QJsonObject OtherCmdParser::parseCMD(const QString &sql) {
     QJsonObject ast_data;
     ast_data["status"] = "ok";
-
     QRegularExpressionMatch match;
 
     if ((match = useDbPattern.match(sql)).hasMatch()) {
@@ -522,28 +562,119 @@ QJsonObject OtherCmdParser::parseCMD(const QString &sql) {
         ast_data["op"] = "use";
         ast_data["object"] = "database";
         ast_data["db_name"] = db_name;
-
     } else if ((match = showDatabasesPattern.match(sql)).hasMatch()) {
         ast_data["op"] = "show";
         ast_data["object"] = "database";
-
     } else if ((match = showTablesPattern.match(sql)).hasMatch()) {
         ast_data["op"] = "show";
         ast_data["object"] = "table";
-
     } else if ((match = describeTablePattern.match(sql)).hasMatch()) {
         ast_data["op"] = "desc";
         ast_data["object"] = "table";
         ast_data["name"] = match.captured(1);
+    }
+    // COMMIT
+    else if ((match = commitPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "commit";
+        ast_data["object"] = "database";
+    }
+    // ROLLBACK
+    else if ((match = rollbackPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "rollback";
+        ast_data["object"] = "database";
+    }
+    // LOGIN
+    else if ((match = loginPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "login";
+        ast_data["object"] = "database";
+        ast_data["username"] = match.captured(1);
+        ast_data["pwd"] = match.captured(2);
+    }
+    // REGISTER
+    else if ((match = registerPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "register";
+        ast_data["object"] = "user";
+        ast_data["username"] = match.captured(1);
+        ast_data["pwd"] = match.captured(2);
+    }
+    // GRANT OWNER
+    else if ((match = grantOwnerPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "grant";
+        ast_data["object"] = "database";
+        ast_data["db_name"] = match.captured(1);
+        ast_data["username"] = match.captured(2);
+    }
+    // REVOKE OWNER
+    else if ((match = revokeOwnerPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "revoke";
+        ast_data["object"] = "database";
+        ast_data["db_name"] = match.captured(1);
 
-    } else {
+        // user_name is optional in the syntax
+        if (match.lastCapturedIndex() >= 2 && !match.captured(2).isEmpty()) {
+            ast_data["username"] = match.captured(2);
+        }else {
+            ast_data["username"] = "";
+        }
+
+    }
+    // GRANT permissions
+    else if ((match = grantPattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "grant";
+        ast_data["object"] = "table";
+
+        // Parse permissions list
+        QString powers = match.captured(1);
+        QJsonArray powerArray;
+        if (powers == "*") {
+            powerArray.append("*");
+        } else {
+            QStringList powerList = powers.split(",");
+            for (const QString &power : powerList) {
+                powerArray.append(power.trimmed());
+            }
+        }
+        ast_data["power"] = powerArray;
+
+        // Parse db_name and tb_name
+        ast_data["db_name"] = match.captured(2);
+        ast_data["tb_name"] = match.captured(3);
+
+        // Username
+        ast_data["username"] = match.captured(4);
+    }
+    // REVOKE permissions
+    else if ((match = revokePattern.match(sql)).hasMatch()) {
+        ast_data["op"] = "revoke";
+        ast_data["object"] = "table";
+
+        // Parse permissions list
+        QString powers = match.captured(1);
+        QJsonArray powerArray;
+        if (powers == "*") {
+            powerArray.append("*");
+        } else {
+            QStringList powerList = powers.split(",");
+            for (const QString &power : powerList) {
+                powerArray.append(power.trimmed());
+            }
+        }
+        ast_data["power"] = powerArray;
+
+        // Parse db_name and tb_name
+        ast_data["db_name"] = match.captured(2);
+        ast_data["tb_name"] = match.captured(3);
+
+        // Username
+        ast_data["username"] = match.captured(4);
+    }
+    else {
         // No pattern matched
         ast_data["status"] = "error";
         ast_data["error_log"] = "Unknown command format";
     }
     return ast_data;
 }
-
 
 
 
