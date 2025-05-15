@@ -70,6 +70,14 @@ void Client::onReadyRead() {
     }
 }
 
+bool Client::login(const QString &username,const QString &pwd) {
+    QJsonArray response = handle_sql(QString("login %1 p %2;").arg(username,pwd));
+    qDebug() << response;
+    int code = response[0].toObject()["code"].toInt();
+    if(code==0) return true;
+    return false;
+}
+
 std::vector<std::string> Client::get_all_database() {
     QJsonArray result = handle_sql("SHOW DATABASES;");
     if (!result.isEmpty()) {

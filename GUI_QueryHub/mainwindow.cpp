@@ -261,7 +261,7 @@ void MainWindow::click_link_btn()
         }
 
         Client* client = new Client();
-        if (!client->connectToServer(host, port.toInt())) {
+        if (!client->connectToServer(host, port.toInt()) || !client->login(user_name,password)) {
             qDebug() << "连接失败";
             ElaMessageBar::error(ElaMessageBarType::Bottom, "错误", "创建连接失败!", 2500, this);
             delete client;

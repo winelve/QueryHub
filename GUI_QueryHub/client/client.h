@@ -20,6 +20,7 @@ public:
     std::vector<std::string> get_all_tables(const std::string& database);
     QJsonArray describe_table(const std::string& database, const std::string& table);
     std::vector<std::vector<std::string>> select_table(const std::string& database, const std::string& table);
+    bool login(const QString &username,const QString &pwd);
 private slots:
     void onReadyRead();
 private:

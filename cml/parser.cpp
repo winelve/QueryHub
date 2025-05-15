@@ -23,7 +23,8 @@ QList<QString> Parser::split_sqls(const QString& sqls) {
 QJsonObject Parser::parse_sql(const QString &_sql){
 
     QString sql = _sql;
-    QString first_keyword = parse_first_word_(sql).toLower();
+    QString first_keyword = parse_first_word_(sql);
+    first_keyword = first_keyword.toLower();
     qDebug() << "first_keyword: " << first_keyword;
 
     QJsonObject ast_root;
