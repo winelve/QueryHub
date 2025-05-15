@@ -27,7 +27,7 @@ const int sAuthorityNotFound = 14;
 const int sUserNameExisted = 15;
 const int sUserNameNotFound = 16;
 const int sUserPasswordError = 17;
-
+const int sUserNotCurrDBOwner = 18;
 //CONST
 const int sEqual =  0;
 const int sLess =  -1;
@@ -72,5 +72,9 @@ const int sConstraintNotFound = 123;
 const int sConstraintUniqueConflict = 124;
 const int sConstraintNotNullConflict = 125;
 const int sConstraintPrimaryKeyConflict = 126;
+
+//INDEX
+const int sIndexExisted = 145;
+const int sIndexNotFound = 146;
 
 #endif // CONSTANTS_H

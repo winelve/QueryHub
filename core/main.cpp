@@ -1,7 +1,6 @@
 //core核心模块的main函数
 
 
-#include "BPlusTree.h"
 #include "dataprocessor.h"
 #include <windows.h>
 #include <QDebug>
@@ -257,7 +256,7 @@ void testUserAuthorityPart() {
 }
 
 void testDML() {
-    DataProcessor::GetInstance().Read(1);
+    DataProcessor::GetInstance().Read(0);
     DataProcessor::GetInstance().Login("root", "123456");
     DataProcessor::GetInstance().UseDatabase("school");
 
@@ -269,7 +268,7 @@ void testDML() {
         {"ClassNo", "string"}
                                                                };
     std::vector<Constraint*> constraintsOfClass;
-    constraintsOfClass.push_back(new PrimaryKeyConstraint("ClassNo", "primary_name"));
+    constraintsOfClass.push_back(new PrimaryKeyConstraint("ClassNo","ClassNoprimary_name"));
     DataProcessor::GetInstance().CreateTable("Class", fieldsOfClass, constraintsOfClass);
 
     //创建学生表
@@ -279,7 +278,7 @@ void testDML() {
         {"ClassNo", "string"}
     };
     std::vector<Constraint*> constraintsOfStudent;
-    constraintsOfStudent.push_back(new PrimaryKeyConstraint("Sno", "primary_name"));
+    constraintsOfStudent.push_back(new PrimaryKeyConstraint("Sno", "Snoprimary_name"));
     // constraintsOfStudent.push_back();
     int ret2 = DataProcessor::GetInstance().CreateTable("student", fieldsOfStudent, constraintsOfStudent);
     printf("Create_2:%d\n", ret2);
@@ -298,13 +297,13 @@ void testDML() {
 
     std::vector<std::pair<std::string, std::string>> records;
     // records.push_back(std::pair<std::string,std::string>("name", "fgc"));
-    records.push_back(std::pair<std::string,std::string>("Sname", "WYQ"));
+    records.push_back(std::pair<std::string,std::string>("Sname", "xt"));
     // records.push_back(std::pair<std::string,std::string>("id", "1009"));
     // records.push_back(std::pair<std::string,std::string>("gender", "0"));
 
     printf("Insert_1:%d\n", DataProcessor::GetInstance().Insert("student", records));
 
-    records.push_back(std::pair<std::string,std::string>("Sno", "23301076"));
+    records.push_back(std::pair<std::string,std::string>("Sno", "23301082"));
 
     // printf("Insert_2:%d\n", DataProcessor::GetInstance().Insert("student", records));
 
@@ -328,21 +327,25 @@ void testDML() {
     //UPDATE
 
 
-    // std::vector<std::pair<std::string, std::string>> values;
-    // records.push_back(std::pair<std::string,std::string>("name", "fgc"));
+    std::vector<std::pair<std::string, std::string>> values;
+    // records.push_back(std::pair<std::string,std::string>("name", "wqy"));
     // records.push_back(std::pair<std::string,std::string>("id", "1001"));
-    // values.push_back(std::pair<std::string,std::string>("gender", "0"));
+    values.push_back(std::pair<std::string,std::string>("Sname", "WYQ"));
 
-    // std::vector<std::tuple<std::string, std::string, int>> conditions;
-    // conditions.push_back(std::tuple<std::string, std::string, int>("name", "fgc", sEqualCondition));
-    // int ret = DataProcessor::GetInstance().Update("teacher", values, conditions);
-    // printf("%d\n", ret);
+    std::vector<std::tuple<std::string, std::string, int>> conditions1;
+    conditions1.push_back(std::tuple<std::string, std::string, int>("Sno", "23301076", sEqualCondition));
+
+    printf("UPDATE_1: %d\n", DataProcessor::GetInstance().Update("student", values, conditions1));
+    // printf("Read_2: %d\n",DataProcessor::GetInstance().Read(0));
+
+    // printf("Read_2: %d\n",DataProcessor::GetInstance().Read(0));
+    // printf("Read_2: %d\n",DataProcessor::GetInstance().Read(0));
 
     //DELETE
     std::vector<std::tuple<std::string, std::string, int>> conditions;
-    conditions.push_back(std::tuple<std::string, std::string, int>("ClassNo", "RJ2303", sEqualCondition));
+    conditions.push_back(std::tuple<std::string, std::string, int>("Sno", "23301082", sEqualCondition));
 
-    // printf("Delete_1:%d\n", DataProcessor::GetInstance().Delete("student", conditions));
+    printf("Delete_1:%d\n", DataProcessor::GetInstance().Delete("student", conditions));
     // printf("Delete_2:%d\n", DataProcessor::GetInstance().Delete("Class", conditions));
 
     // int ret = DataProcessor::GetInstance().Delete("teacher",conditions);
@@ -356,6 +359,7 @@ void testDML() {
     // conditions.push_back(std::tuple<std::string, std::string, int>("gender", "0", sEqualCondition));
     std::vector<std::vector<std::any>> returnRecords;
     printf("SELECT_1: %d\n",DataProcessor::GetInstance().Select(std::vector<std::string>{"student","Class"}, {"*"}, conditions, returnRecords, {"Sno"}));
+    // printf("SELECT_1: %d\n",DataProcessor::GetInstance().Select("student", {"*"}, conditions, returnRecords, {"Sno"}));
     for(const auto& row: returnRecords) {
         for(const auto& record: row) {
             std::cout << sqlTool::AnyToString(record) << " ";
@@ -368,9 +372,24 @@ void testDML() {
     std::cout << sqlTool::AnyToString(a) << std::endl;
 
 
+    printf("Index_1:%d\n",DataProcessor::GetInstance().BuildIndex("student", "Sno"));
 
-    DataProcessor::GetInstance().Write();
+    printf("Index_2:%d\n",DataProcessor::GetInstance().BuildIndex("student", "Sname"));
+
+    // printf("Index_3:%d\n",DataProcessor::GetInstance().BuildIndex("student", "ClassNo"));
+
+    printf("Index_1:%d\n",DataProcessor::GetInstance().DestroyIndex("student", "Sname"));
+
+    printf("Index_4:%d\n",DataProcessor::GetInstance().DestroyIndex("student", "ClassNo"));
+
+    printf("Write_1:%d\n",DataProcessor::GetInstance().Write());
+
+
 }
+
+// void testIndex() {
+
+// }
 
 int main() {
     //设置编码以得以输出中文
@@ -381,7 +400,7 @@ int main() {
     // readDataFromFile();
 
     // testUserAuthorityPart();
-    // testDML();
+    testDML();
 
 //---------B+树--------------
     // bPlusTree bPlusTree;

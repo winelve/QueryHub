@@ -10,7 +10,7 @@
 #include <map>
 #include "all_constraints.h"
 #include "constants.h"
-
+#include "BPlusTree.h"
 #include "sqltool.h"
 
 class Database;
@@ -24,9 +24,11 @@ private:
     std::unordered_map<std::string,std::string> fieldMap;//字段哈希表
     std::vector<Constraint*> constraints;//约束
     std::vector<std::unordered_map<std::string, std::any>>  records;//记录
+    std::vector<int> ValidIndexOfRecords; //对应索引记录是否有效(0为无效,1为有效)
 
+    std::unordered_map<std::string, std::shared_ptr<bPlusTree>> indexes;//索引 <fieldName, B+Tree>
 
-    // int index;//索引
+    int availableRecordsNum;
     // Index* indexPtr; //索引
 public:
 
@@ -34,8 +36,8 @@ public:
     Table(const std::string &tableName,
           const std::vector<std::pair<std::string,std::string>> & fieldList = {},
           const std::vector<Constraint*>& constraints = {},
-          const std::vector<std::unordered_map<std::string, std::any>>&  records = {}
-          );
+          const std::vector<std::unordered_map<std::string, std::any>>&  records = {},
+          const std::vector<std::string>& indexKey = {});
 
     ~Table();//析构函数
 
@@ -51,6 +53,14 @@ public:
 
     const std::vector<std::unordered_map<std::string, std::any>>&  GetRecords() const;
 
+    const std::vector<int>& GetValidIndexOfRecords() const;
+
+
+    int GetIndex(std::vector<std::string>& compareKey) const;
+
+    int GetRecordsSize() const;
+
+    int GetAvailableRecordsNum() const;
     const std::vector<Constraint*>& GetConstraints() const;
 
     const std::unordered_map<std::string, std::string>& GetFieldMap() const;
@@ -70,9 +80,9 @@ public:
     int CheckDataType(std::string type, std::string value);
 //DDL
     //增加字段
-    int AlterTableAdd(std::pair<std::string, std::string> new_field);
+    int AlterTableAdd(std::pair<std::string, std::string> newField);
     //删除字段
-    int AlterTableDrop(std::string field_name, Database* db);
+    int AlterTableDrop(std::string fieldName, Database* db);
     //修改字段
     int AlterTableModify(std::pair<std::string, std::string> field);
     //修改列名
@@ -100,15 +110,18 @@ public:
     //判断约束
     int CheckConstraint(std::unordered_map<std::string, std::any>& record, Database* db);
     //判断约束
-    int CheckConstraint(std::unordered_map<std::string, std::any>& record, Database* db, std::vector<std::unordered_map<std::string, std::any> > records, int currentRecordIndex);
+    int CheckConstraint(std::unordered_map<std::string, std::any>& record, Database* db, std::vector<std::unordered_map<std::string, std::any> > records, std::vector<int> ValidIndexOfRecords, int currentRecordIndex);
     //插入记录
     int Insert(std::vector<std::pair<std::string,std::string>> recordsOfIn, Database * db);
     //直接进行记录更新
-    int ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any>>& records, const std::vector<std::pair<std::string, std::string>>& values,const std::vector<std::tuple<std::string, std::string, int>>& conditions, Database *db, int checkConstraintsOrNot = 0);
+    int ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any>>& records, std::vector<int>& ValidIndexOfRecords, const std::vector<std::pair<std::string, std::string>>& values,const std::vector<std::tuple<std::string, std::string, int>>& conditions, Database *db, int checkConstraintsOrNot = 0);
     //更新(修改)记录
     int Update(const std::vector<std::pair<std::string, std::string>>& values,const std::vector<std::tuple<std::string, std::string, int>>& conditions, Database* db);
     //删除记录
     int Delete(const std::vector<std::tuple<std::string, std::string, int>>& conditions, Database* db);
+//Index
+    int BuildIndex(const std::string& fieldName);
+    int DestroyIndex(const std::string& fieldName);
 };
 
 #endif // TABLE_H

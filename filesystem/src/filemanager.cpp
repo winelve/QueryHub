@@ -133,17 +133,32 @@ int FileManager::WriteTablesFile(const std::string& databaseName,const std::vect
         if (!out.is_open())
             assert(false);
 
+        //valid写法
         const std::vector<std::unordered_map<std::string, std::any>>& records = table.GetRecords();
-        out << records.size() << std::endl;
-        for(const auto & record : records) {
-            out << record.size() << std::endl;
+        const std::vector<int>& valid = table.GetValidIndexOfRecords();
+        out << table.GetAvailableRecordsNum() << std::endl;
+        for(int i = 0; i < records.size(); i++) {
+            if(valid[i] == 0) continue;
+            out << records[i].size() << std::endl;
 
-            for(const auto & [name, value] : record) {
+            for(const auto & [name, value] : records[i]) {
                 out << name << " " << sqlTool::AnyToString(value) << " ";
             }
 
             out << std::endl;
+
         }
+
+        // out << records.size() << std::endl;
+        // for(const auto & record : records) {
+        //     out << record.size() << std::endl;
+
+        //     for(const auto & [name, value] : record) {
+        //         out << name << " " << sqlTool::AnyToString(value) << " ";
+        //     }
+
+        //     out << std::endl;
+        // }
 
         out.close();
 
@@ -162,6 +177,33 @@ int FileManager::WriteTablesFile(const std::string& databaseName,const std::vect
         // out << table.GetConstraints().size() << std::endl;
         out << sqlTool::ConstraintsToString(table.GetConstraints())
             << std::endl;
+        out.close();
+
+        // tableNameIndexes.txt
+        out.open(path + table.GetTableName() + "Indexes.txt",
+                 std::ofstream::out | std::ofstream::trunc);
+
+        if (!out.is_open())
+            assert(false);
+
+        int indexState;
+        std::vector<std::string> compareKey;
+
+        indexState = table.GetIndex(compareKey);
+
+        if (indexState == sSuccess)
+        {
+            out << compareKey.size() << std::endl;
+            for (const auto& key : compareKey)
+            {
+                out << key << " ";
+            }
+            out << std::endl;
+        }
+        else
+        {
+            out << 0 << std::endl;
+        }
         out.close();
 
     }
@@ -232,25 +274,28 @@ int FileManager::ReadDatabasesFile(std::vector<Database>& databases){
     std::ifstream in("./data/databases.txt", std::ifstream::in);
 
     if(!in.is_open())
-        assert(false);
+        return -1;
 
-    std::cout << "db" << std::endl;
+    // std::cout << "db" << std::endl;
     //清空数据库
+
+    databases.clear();
+
     int n;
     in >> n;
 
-    std::cout << n << std::endl;
+    // std::cout << n << std::endl;
     for(int i = 1; i <= n; i++) {
 
         std::string databaseName;
         std::string ownerUser;
         in >> databaseName >> ownerUser;
 
-        std::cout << databaseName << " " << ownerUser << std::endl;
+        // std::cout << databaseName << " " << ownerUser << std::endl;
         databases.push_back(Database(databaseName, ownerUser));
     }
 
-    std::cout << "dbOver" << std::endl;
+    // std::cout << "dbOver" << std::endl;
 
     in.close();
 
@@ -262,7 +307,7 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
 
     std::string path = "./data/" + databaseName + "/";
 
-    tables.clear();
+    // tables.clear();
 
     std::vector<std::string> tableNames;
     int n, m;
@@ -283,7 +328,7 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
         tableNames.push_back(tableName);
     }
 
-    std::cout << tableNames.size() << std::endl;
+    // std::cout << tableNames.size() << std::endl;
 
     in.close();
 
@@ -294,6 +339,7 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
         std::unordered_map<std::string, std::string> fieldMap;
         std::vector<std::unordered_map<std::string, std::any>> records;
         std::vector<Constraint*> constraints;
+        std::vector<std::string> indexKey;
         // std::vector .... indexes;
 
         // tableName.txt
@@ -314,113 +360,142 @@ int FileManager::ReadTablesFile(const std::string& databaseName,
 
         in.close();
 
-        std::cout << fieldList.size() << std::endl;
+        // std::cout << fieldList.size() << std::endl;
         // tableNameRecords.txt
         in.open(path + tableName + "Records.txt", std::ifstream::in);
 
-        if (!in.is_open())
-            return -1;
+        if (in.is_open()) {
+            in >> n;
 
-        in >> n;
-
-        //记录
-        for (int i = 1; i <= n; i++)
-        {
-            std::unordered_map<std::string, std::any> record;
-            std::string name;
-            std::string value;
-            in >> m;
-            for (int j = 1; j <= m; j++)
+            //记录
+            for (int i = 1; i <= n; i++)
             {
-                in >> name >> value;
-                record[name] =
-                    sqlTool::TypeAndValueToAny(fieldMap[name], value);
+                std::unordered_map<std::string, std::any> record;
+                std::string name;
+                std::string value;
+                in >> m;
+                for (int j = 1; j <= m; j++)
+                {
+                    in >> name >> value;
+                    record[name] =
+                        sqlTool::TypeAndValueToAny(fieldMap[name], value);
+                }
+
+
+                records.push_back(record);
             }
 
-
-            records.push_back(record);
         }
+
 
 
 
         in.close();
 
-        std::cout << records.size() << std::endl;
+        // std::cout << records.size() << std::endl;
 
 
-        for (const auto& record : records) {
-            std::cout << "[";
-            // std::cout << record.size() << std::endl;
-            for (const auto& [name, value] : record) {
-                std::cout << name << ": " << sqlTool::AnyToString(value) << " ";
-            }
-            std::cout << "]    ";
-        }
+        // for (const auto& record : records) {
+        //     std::cout << "[";
+        //     // std::cout << record.size() << std::endl;
+        //     for (const auto& [name, value] : record) {
+        //         std::cout << name << ": " << sqlTool::AnyToString(value) << " ";
+        //     }
+        //     std::cout << "]    ";
+        // }
 
         // tableNameConstraints.txt
         in.open(path + tableName + "Constraints.txt", std::ifstream::in);
-        if (!in.is_open())
-            return -1;
+        if (in.is_open()) {
+            in >> n;
+            for (int i = 1; i <= n; i++)
+            {
+                int type;
+                std::string fieldName, constraintName;
+                in >> type >> constraintName >> fieldName;
+                //根据type(consts类里的约束Int值来进行转换)
+                if (type == sPrimaryKey)
+                {
+                    constraints.push_back(
+                        new PrimaryKeyConstraint(fieldName, constraintName));
+                }
+                else if (type == sForeignKey)
+                {
+                    std::string s1, s2;
+                    in >> s1 >> s2;
+                    constraints.push_back(new ForeignKeyConstraint(
+                        fieldName, constraintName, s1, s2));
+                }
+                else if (type == sForeignRefered)
+                {
+                    std::string s1, s2;
+                    in >> s1 >> s2;
+                    constraints.push_back(new ForeignReferedConstraint(
+                        fieldName, constraintName, s1, s2));
+                }
+                else if (type == sUnique)
+                {
+                    constraints.push_back(
+                        new UniqueConstraint(fieldName, constraintName));
+                }
+                else if (type == sNotNull)
+                {
+                    constraints.push_back(
+                        new NotNullConstraint(fieldName, constraintName));
+                }
+                else if (type == sDefault)
+                {
+                    std::string value;
+                    in >> value;
+                    constraints.push_back(
+                        new DefaultConstraint(fieldName, constraintName,
+                                              sqlTool::TypeAndValueToAny(
+                                                  fieldMap.at(fieldName), value)));
+                }
+                else
+                {
+                    std::cerr << "Unknown Constraint Type" << std::endl;
+                }
+            }
 
-        in >> n;
-        for (int i = 1; i <= n; i++)
-        {
-            int type;
-            std::string fieldName, constraintName;
-            in >> type >> constraintName >> fieldName;
-            //根据type(consts类里的约束Int值来进行转换)
-            if (type == sPrimaryKey)
+        }
+
+        in.close();
+
+
+
+
+
+        // tableNameIndexes.txt
+
+        in.open(path + tableName + "Indexes.txt", std::ifstream::in);
+        if (in.is_open()) {
+
+            int indexState;
+            in >> indexState;
+
+            if (indexState > 0)
             {
-                constraints.push_back(
-                    new PrimaryKeyConstraint(fieldName, constraintName));
-            }
-            else if (type == sForeignKey)
-            {
-                std::string s1, s2;
-                in >> s1 >> s2;
-                constraints.push_back(new ForeignKeyConstraint(
-                    fieldName, constraintName, s1, s2));
-            }
-            else if (type == sForeignRefered)
-            {
-                std::string s1, s2;
-                in >> s1 >> s2;
-                constraints.push_back(new ForeignReferedConstraint(
-                    fieldName, constraintName, s1, s2));
-            }
-            else if (type == sUnique)
-            {
-                constraints.push_back(
-                    new UniqueConstraint(fieldName, constraintName));
-            }
-            else if (type == sNotNull)
-            {
-                constraints.push_back(
-                    new NotNullConstraint(fieldName, constraintName));
-            }
-            else if (type == sDefault)
-            {
-                std::string value;
-                in >> value;
-                constraints.push_back(
-                    new DefaultConstraint(fieldName, constraintName,
-                                          sqlTool::TypeAndValueToAny(
-                                              fieldMap.at(fieldName), value)));
-            }
-            else
-            {
-                std::cerr << "Unknown Constraint Type" << std::endl;
+                for (int i = 0; i < indexState; i++)
+                {
+                    std::string str;
+                    in >> str;
+                    indexKey.push_back(str);
+
+                    // printf("Str: %s\n", str.c_str());
+                }
             }
         }
         in.close();
 
 
-        std::cout << std::endl;
+
+        // std::cout << constraints.size() << std::endl;
+        tables.push_back(Table(tableName, fieldList, constraints, records, indexKey));
 
 
-        std::cout << constraints.size() << std::endl;
-        tables.push_back(Table(tableName, fieldList, constraints, records));
     }
+
 
     return sSuccess;
 }

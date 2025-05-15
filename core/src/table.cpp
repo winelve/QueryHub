@@ -6,7 +6,8 @@
 Table::Table(const std::string &tableName,
       const std::vector<std::pair<std::string,std::string>> & fieldList,
              const std::vector<Constraint*>& constraints,
-             const std::vector<std::unordered_map<std::string, std::any>>&  records) {
+             const std::vector<std::unordered_map<std::string, std::any>>&  records
+             ,const std::vector<std::string>& indexKey) {
 
     this->tableName = tableName;
     this->fieldList = fieldList;
@@ -14,11 +15,21 @@ Table::Table(const std::string &tableName,
     this->constraints = constraints;
     // std::cout << "CONSTRAINTS: " << constraints.size() << std::endl;
     // std::cout << "THIS_CONSTRAINTS: " << (this->constraints).size() << std::endl;
+
     //建立哈希表
     for(auto& field: fieldList) {
         fieldMap[field.first] = field.second;
     }
 
+    availableRecordsNum = records.size();//初始化为record大小
+    //建立记录有效表
+    for(int i = 0; i < records.size(); i++) {
+        ValidIndexOfRecords.push_back(1);
+        // printf("ValidIndexOfRecords: %d\n", ValidIndexOfRecords.size());
+    }
+    for(const auto&key : indexKey) {
+        BuildIndex(key);
+    }
 }
 
 //析构函数
@@ -27,7 +38,7 @@ Table::~Table() {
 }
 
 //拷贝构造函数
-Table::Table(const Table& t) : tableName(t.tableName), fieldList(t.fieldList), constraints(t.constraints), records(t.records){
+Table::Table(const Table& t) : tableName(t.tableName), fieldList(t.fieldList), constraints(t.constraints), records(t.records), ValidIndexOfRecords(t.ValidIndexOfRecords), indexes(t.indexes), availableRecordsNum(t.availableRecordsNum){
     for(auto& field: fieldList) {
         fieldMap[field.first] = field.second;
     }
@@ -46,6 +57,9 @@ void Table::swap(Table& s1, Table& s2) {
     swap(s1.fieldMap, s2.fieldMap);
     swap(s1.constraints, s2.constraints);
     swap(s1.records, s2.records);
+    swap(s1.ValidIndexOfRecords, s2.ValidIndexOfRecords);
+    swap(s1.indexes, s2.indexes);
+    swap(s1.availableRecordsNum, s2.availableRecordsNum);
 }
 
 // ----Get函数----
@@ -62,6 +76,25 @@ const std::vector<std::unordered_map<std::string, std::any>>&  Table::GetRecords
     return records;
 }
 
+const std::vector<int>& Table::GetValidIndexOfRecords() const {
+    return ValidIndexOfRecords;
+}
+
+int Table::GetIndex(std::vector<std::string>& compareKey) const {
+    for(const auto &index: indexes) {
+        compareKey.push_back(index.first);
+    }
+
+    return sSuccess;
+}
+
+int Table::GetRecordsSize() const {
+    return records.size();
+}
+
+int Table::GetAvailableRecordsNum() const {
+    return availableRecordsNum;
+}
 const std::vector<Constraint*>& Table::GetConstraints() const {
     return constraints;
 }
@@ -77,10 +110,21 @@ void Table::SetTableName(const std::string& tableName) {
 
 int Table::FindField(std::string fieldName, std::any value) const {
     if(!fieldMap.count(fieldName)) return sFieldNotFound;
-    for(const auto& record : records) {
-        if(!record.count(fieldName)) continue;
-        if(sqlTool::CompareAny(record.at(fieldName), value) == sEqual) return sSuccess;
+
+    //VALID写法
+    for(int i = 0; i < records.size(); i++) {
+        if(ValidIndexOfRecords[i] == 0 ) continue;
+
+        if(!records[i].count(fieldName)) continue;
+
+        if(sqlTool::CompareAny(records[i].at(fieldName), value) == sEqual) return sSuccess;
+
     }
+
+    // for(const auto& record : records) {
+    //     if(!record.count(fieldName)) continue;
+    //     if(sqlTool::CompareAny(record.at(fieldName), value) == sEqual) return sSuccess;
+    // }
     return sFieldValueNotFound;
 }
 
@@ -97,11 +141,23 @@ int Table::DescribeTable(std::vector<std::pair<std::string, std::string>>& field
 int Table::CheckUnique(std::string fieldName) const {
     if(!fieldMap.count(fieldName)) return sFieldNotFound;
     std::map<std::string, int> mp;
-    for(const auto& record : records) {
-        if(!record.count(fieldName)) continue;
-        if(mp.count(sqlTool::AnyToString(record.at(fieldName)))) return sUniqueRepeated;
-        mp[sqlTool::AnyToString(record.at(fieldName))] = 1;
+
+    //VALID写法
+    for(int i = 0; i < records.size(); i++) {
+        if(ValidIndexOfRecords[i] == 0 ) continue;
+
+        if(!records[i].count(fieldName)) continue;
+
+        if(mp.count(sqlTool::AnyToString(records[i].at(fieldName)))) return sUniqueRepeated;
+        mp[sqlTool::AnyToString(records[i].at(fieldName))] = 1;
+
     }
+
+    // for(const auto& record : records) {
+    //     if(!record.count(fieldName)) continue;
+    //     if(mp.count(sqlTool::AnyToString(record.at(fieldName)))) return sUniqueRepeated;
+    //     mp[sqlTool::AnyToString(record.at(fieldName))] = 1;
+    // }
     return sSuccess;
 }
 
@@ -157,15 +213,28 @@ int Table::AlterTableDrop(std::string fieldName, Database* db) {
     }
 
 
-    //删除记录中的相应字段
-    for(auto& record : records) {
-        for(auto it = record.begin(); it != record.end(); ++it) {
+    //删除记录中的相应字段(不实际删而是修改Valid)
+    for(int i = 0; i < records.size(); i++) {
+
+        if(ValidIndexOfRecords[i] == 0) continue;
+
+        std::unordered_map<std::string, std::any> newRecord = records[i];
+        for(auto it = newRecord.begin(); it != newRecord.end(); ++it) {
             if(it->first == fieldName) {
-                record.erase(it);
+                ValidIndexOfRecords[i] = 0;
+                newRecord.erase(it);
+                // record.erase(it);
                 break;
             }
         }
+
+        if(ValidIndexOfRecords[i] == 0) {
+            //若有修改则将修改后的record加入records中
+            records.push_back(newRecord);
+            ValidIndexOfRecords.push_back(1);
+        }
     }
+
     //删除字段
     for(auto it = fieldMap.begin(); it != fieldMap.end(); ++it) {
         if(it->first == fieldName) {
@@ -182,6 +251,8 @@ int Table::AlterTableDrop(std::string fieldName, Database* db) {
     }
     return sSuccess;
 }
+
+//字段类型修改
 int Table::AlterTableModify(std::pair<std::string, std::string> field) {
     //若找不到该字段
     if(!fieldMap.count(field.first)) {
@@ -202,31 +273,68 @@ int Table::AlterTableModify(std::pair<std::string, std::string> field) {
     }
 
     //遍历记录检查对应该字段的值在改后是否符合type
-    for(auto& record: records) {
-        if(!record.count(field.first)) {
+    //(Valid写法)
+    for(int i = 0; i < records.size(); i++) {
+
+        if(ValidIndexOfRecords[i] == 0) continue;
+
+        if(!records[i].count(field.first)) {
             continue;
         }
-        int ret = CheckDataType(field.second, sqlTool::AnyToString(record[field.first]));
+        int ret = CheckDataType(field.second, sqlTool::AnyToString(records[i][field.first]));
         //std::cout<<"ret : "<<ret<<std::endl;
         if(ret != sSuccess) return ret;
+
     }
+
+    // for(auto& record: records) {
+    //     if(!record.count(field.first)) {
+    //         continue;
+    //     }
+    //     int ret = CheckDataType(field.second, sqlTool::AnyToString(record[field.first]));
+    //     //std::cout<<"ret : "<<ret<<std::endl;
+    //     if(ret != sSuccess) return ret;
+    // }
+
     //成功修改后进行相应的更改
     fieldMap[field.first] = field.second;
 
 
-    for(auto& old_field : fieldList) {
-        if(old_field.first == field.first) {
-            old_field = field;
+    for(auto& oldField : fieldList) {
+        if(oldField.first == field.first) {
+            oldField = field;
         }
     }
 
-    for(auto& record: records) {
-        if(!record.count(field.first)) {
-            continue;
-        }
-        std::string tmp = sqlTool::AnyToString(record[field.first]);
-        record[field.first] = sqlTool::TypeAndValueToAny(field.second, tmp);
+
+    //valid写法修改记录
+    for(int i = 0; i < records.size(); i++) {
+
+        if(ValidIndexOfRecords[i] == 0) continue;
+
+        if(!records[i].count(field.first))  continue;
+
+        ValidIndexOfRecords[i] = 0;
+
+        std::unordered_map<std::string, std::any> newRecord = records[i];
+
+
+        std::string tmp = sqlTool::AnyToString(newRecord[field.first]);
+        newRecord[field.first] = sqlTool::TypeAndValueToAny(field.second, tmp);
+
+        //若有修改则将修改后的record加入records中
+        records.push_back(newRecord);
+        ValidIndexOfRecords.push_back(1);
     }
+
+
+    // for(auto& record: records) {
+    //     if(!record.count(field.first)) {
+    //         continue;
+    //     }
+    //     std::string tmp = sqlTool::AnyToString(record[field.first]);
+    //     record[field.first] = sqlTool::TypeAndValueToAny(field.second, tmp);
+    // }
     return sSuccess;
 }
 
@@ -253,15 +361,39 @@ int Table::AlterTableColumnName(std::string columnName, std::string newColumnNam
 
     //更新表内容
 
-    //修改records
-    for(auto &record : records) {
-        auto it = record.find(columnName);
-        if(it != record.end()) {
+    //valid写法修改记录
+    for(int i = 0; i < records.size(); i++) {
+
+        if(ValidIndexOfRecords[i] == 0) continue;
+
+
+        std::unordered_map<std::string, std::any> newRecord = records[i];
+
+        auto it = newRecord.find(columnName);
+
+        if(it != newRecord.end()) {
+        //若原纪录要改则
+            ValidIndexOfRecords[i] = 0;
             std::any value = it->second;
-            record.erase(it);
-            record[newColumnName] = value;
+            newRecord.erase(it);
+            newRecord[newColumnName] = value;
+            //若有修改则将修改后的record加入records中
+            records.push_back(newRecord);
+            ValidIndexOfRecords.push_back(1);
         }
+
+
     }
+
+    //修改records
+    // for(auto &record : records) {
+    //     auto it = record.find(columnName);
+    //     if(it != record.end()) {
+    //         std::any value = it->second;
+    //         record.erase(it);
+    //         record[newColumnName] = value;
+    //     }
+    // }
 
     //修改fieldMap
     auto it = fieldMap.find(columnName);
@@ -293,29 +425,60 @@ int Table::AlterTableConstraint(Constraint* constraint) {
     if(dynamic_cast<const PrimaryKeyConstraint *>(constraint) != nullptr) {
         std::string field_name = constraint->GetFieldName();
         std::map<std::string, int> mp;
-        for(const auto& record : records) {
-            if(!record.count(field_name)) return sPrimaryKey;
-            if(mp.count(sqlTool::AnyToString(record.at(field_name)))) return sPrimaryKeyRepeated;
-            mp[sqlTool::AnyToString(record.at(field_name))] = 1;
+
+
+        //valid写法
+        for(int i = 0; i < records.size(); i++) {
+
+            if(ValidIndexOfRecords[i] == 0) continue;
+
+            if(!records[i].count(field_name)) return sPrimaryKey;
+            if(mp.count(sqlTool::AnyToString(records[i].at(field_name)))) return sPrimaryKeyRepeated;
+            mp[sqlTool::AnyToString(records[i].at(field_name))] = 1;
+
         }
+
+        // for(const auto& record : records) {
+        //     if(!record.count(field_name)) return sPrimaryKey;
+        //     if(mp.count(sqlTool::AnyToString(record.at(field_name)))) return sPrimaryKeyRepeated;
+        //     mp[sqlTool::AnyToString(record.at(field_name))] = 1;
+        // }
 
     }
     else if(dynamic_cast<const NotNullConstraint *>(constraint) != nullptr) {
         //如果有空的但设置了非空则拒绝修改
         std::string field_name = constraint->GetFieldName();
-        for(const auto& record : records) {
-            if(!record.count(field_name)) return sNotNullEmpty;
+        //VALID写法
+        for(int i = 0; i < records.size(); i++) {
+
+            if(ValidIndexOfRecords[i] == 0) continue;
+
+            if(!records[i].count(field_name)) return sNotNullEmpty;
         }
+        // for(const auto& record : records) {
+        //     if(!record.count(field_name)) return sNotNullEmpty;
+        // }
     }
     else if(dynamic_cast<const UniqueConstraint *>(constraint) != nullptr) {
         //如果设置唯一但有值并非唯一则拒绝修改
         std::string field_name = constraint->GetFieldName();
         std::map<std::string, int> mp;
-        for(const auto& record : records) {
-            if(!record.count(field_name)) continue;
-            if(mp.count(sqlTool::AnyToString(record.at(field_name)))) return sUniqueRepeated;
-            mp[sqlTool::AnyToString(record.at(field_name))] = 1;
+
+        for(int i = 0; i < records.size(); i++) {
+
+            if(ValidIndexOfRecords[i] == 0) continue;
+
+            if(!records[i].count(field_name)) continue;
+            if(mp.count(sqlTool::AnyToString(records[i].at(field_name)))) return sUniqueRepeated;
+            mp[sqlTool::AnyToString(records[i].at(field_name))] = 1;
+
         }
+
+        // for(const auto& record : records) {
+        //     if(!record.count(field_name)) continue;
+        //     if(mp.count(sqlTool::AnyToString(record.at(field_name)))) return sUniqueRepeated;
+        //     mp[sqlTool::AnyToString(record.at(field_name))] = 1;
+        // }
     }
 
     constraints.push_back(constraint);
@@ -452,17 +615,30 @@ int Table::Select(std::vector<std::string> fieldName,
     std::vector<int> selectedIndex;
 
     // 可以由索引得到选中记录
-    // if(!haveGetAnswer && index_ptr && conditions.size() > 0) {
-    //     int ret = index_ptr->query(conditions, selected_index);
-    //     if(ret == 0) {
-    //         std::cout << "Index speedup successfully." << std::endl;
-    //         haveGetAnswer = true;
-    //     }
-    // }
+    if(!haveGetAnswer && conditions.size() > 0) {
+        //找到
+        for(const auto&condition : conditions) {
+            std::string fieldName = std::get<0>(condition);
+            std::string key = std::get<1>(condition);
+            int compareResult = std::get<2>(condition);
+
+            // printf("FieldName: %s", fieldName.c_str());
+            if(indexes.count(fieldName)) {
+                selectedIndex = indexes[fieldName]->search({sqlTool::AnyToString(key)},compareResult, conditions, this);
+                // printf("useIndex: %d", selectedIndex.size());
+                haveGetAnswer = true;
+
+                break;
+            }
+        }
+
+
+    }
 
     // 默认使用暴力方法求选中记录
     if(!haveGetAnswer) {
         for(int i = 0; i < records.size(); i++) {
+            if(ValidIndexOfRecords[i] == 0) continue; //检测记录有效性
             // 检查条件
             if(CheckCondition(records[i], conditions) != sSuccess) continue;
             // 添加一条记录
@@ -522,7 +698,7 @@ int Table::CheckBeingRefered(const std::unordered_map<std::string, std::any>& re
             std::string fieldName = constraint->GetFieldName();
             std::any value = record.at(fieldName);
             std::string referenceTableName = dynamic_cast< ForeignReferedConstraint * >(constraint)->GetReferenceTableName();
-            std::string refereneceFieldName = dynamic_cast< ForeignReferedConstraint * >(constraint)->GetReferenceFieldName();
+            std::string referenceFieldName = dynamic_cast< ForeignReferedConstraint * >(constraint)->GetReferenceFieldName();
 
             //获取依赖的表
             std::string temp;
@@ -533,12 +709,26 @@ int Table::CheckBeingRefered(const std::unordered_map<std::string, std::any>& re
 
             if(ret != sSuccess)  return sErrorInProcess;
 
+            //VALID写法
             //找到依赖表中与该记录对应字段的value相等的即返回被依赖
-            for(const auto& record : referenceTable.GetRecords()) {
-                if(!record.count(refereneceFieldName)) continue;
+            std::vector<std::unordered_map<std::string, std::any>> referenceTableRecords = referenceTable.GetRecords();
+            std::vector<int> referenceTableValidIndexOfRecords = referenceTable.GetValidIndexOfRecords();
 
-                if(sqlTool::CompareAny(value, record.at(refereneceFieldName)) == sEqual) return sBeingRefered;
+            for(int i = 0; i < referenceTableRecords.size(); i++) {
+                if(referenceTableValidIndexOfRecords[i] == 0) continue;
+
+                if(!referenceTableRecords[i].count(referenceFieldName)) continue;
+
+                if(sqlTool::CompareAny(value, referenceTableRecords[i].at(referenceFieldName)) == sEqual) return sBeingRefered;
             }
+
+            // for(const auto& record : referenceTable.GetRecords()) {
+
+
+            //     if(!record.count(refereneceFieldName)) continue;
+
+            //     if(sqlTool::CompareAny(value, record.at(refereneceFieldName)) == sEqual) return sBeingRefered;
+            // }
         }
     }
 
@@ -571,6 +761,9 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
             if(record.count(fieldName)) {
                 //遍历记录看是否有重复,若重复则不满足唯一约束返回错误
                 for(int i = 0; i < records.size(); ++i){
+
+                    if(ValidIndexOfRecords[i] == 0) continue;
+
                     auto& otherRecord = records[i];
                     if (otherRecord.count(fieldName)){
                         if (sqlTool::CompareAny(record[fieldName], otherRecord[fieldName]) == sEqual){
@@ -592,6 +785,9 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
 
             //主键唯一
             for(int i = 0; i < records.size(); ++i){
+
+                if(ValidIndexOfRecords[i] == 0) continue;
+
                 auto& otherRecord = records[i];
 
                 if (otherRecord.count(fieldName)){
@@ -619,16 +815,37 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
             int ret = db->FindTable(referenceTableName, referenceTable);
 
             if(ret != sSuccess) return sErrorInProcess;
+
             int success = 0;
-            for(const auto& record : referenceTable.GetRecords()) {
-                if(!record.count(referenceFieldName)) continue;
+            //VALID写法
+
+            std::vector<std::unordered_map<std::string, std::any>> referenceTableRecords = referenceTable.GetRecords();
+            std::vector<int> referenceTableValidIndexOfRecords = referenceTable.GetValidIndexOfRecords();
+
+            for(int i = 0; i < referenceTableRecords.size(); i++) {
+                if(referenceTableValidIndexOfRecords[i] == 0) continue;
+
+                if(!referenceTableRecords[i].count(referenceFieldName)) continue;
 
                 //只有找到从依赖表中找到对应依赖的值才算符合约束
-                if(sqlTool::CompareAny(currentValue,record.at(referenceFieldName)) == sEqual) {
+                if(sqlTool::CompareAny(currentValue,referenceTableRecords[i].at(referenceFieldName)) == sEqual) {
                     success = 1;
                     break;
                 }
             }
+
+
+
+            // for(const auto& record : referenceTable.GetRecords()) {
+            //     if(!record.count(referenceFieldName)) continue;
+
+            //     //只有找到从依赖表中找到对应依赖的值才算符合约束
+            //     if(sqlTool::CompareAny(currentValue,record.at(referenceFieldName)) == sEqual) {
+            //         success = 1;
+            //         break;
+            //     }
+            // }
+
             if(success == 0)return sConstraintForeignKeyConflict;
         }
 
@@ -641,6 +858,9 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
 
             //反外键需唯一
             for(int i = 0; i < records.size(); ++i){
+
+                if(ValidIndexOfRecords[i] == 0 ) continue;
+
                 auto& otherRecord = records[i];
                 if(otherRecord.count(constraint->GetFieldName()) && sqlTool::CompareAny(otherRecord.at(constraint->GetFieldName()), record.at(constraint->GetFieldName())) == sEqual) {
                     return sBeingRefered;
@@ -650,8 +870,9 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
     }
     return sSuccess;
 }
+
 //检查记录是否符合约束
-int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Database* db, std::vector<std::unordered_map<std::string, std::any> > records, int currentRecordIndex) {
+int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Database* db, std::vector<std::unordered_map<std::string, std::any> > records,std::vector<int> ValidIndexOfRecords, int currentRecordIndex) {
 
     for(auto constraint:constraints) {
 
@@ -674,7 +895,11 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
             if(record.count(fieldName)) {
                 //遍历记录看是否有重复,若重复则不满足唯一约束返回错误
                 for(int i = 0; i < records.size(); ++i){
+
+                    if(ValidIndexOfRecords[i] == 0) continue;//检查valid
+
                     if(i == currentRecordIndex) continue;
+
                     auto& otherRecord = records[i];
                     if (otherRecord.count(fieldName)){
                         if (sqlTool::CompareAny(record[fieldName], otherRecord[fieldName]) == sEqual){
@@ -694,8 +919,13 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
 
             std::string fieldName = constraint->GetFieldName();
 
+            // printf("ValidSize: %d\n", ValidIndexOfRecords.size());
+            // printf("wdf: %d\n", ValidIndexOfRecords[0]);
             //主键唯一
             for(int i = 0; i < records.size(); ++i){
+
+                if(ValidIndexOfRecords[i] == 0) continue;//检查valid
+
                 if(i == currentRecordIndex) continue;
                 auto& otherRecord = records[i];
 
@@ -725,15 +955,32 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
 
             if(ret != sSuccess) return sErrorInProcess;
             int success = 0;
-            for(const auto& record : referenceTable.GetRecords()) {
-                if(!record.count(referenceFieldName)) continue;
+
+            //VALID写法
+            std::vector<std::unordered_map<std::string, std::any>> referenceTableRecords = referenceTable.GetRecords();
+            std::vector<int> referenceTableValidIndexOfRecords = referenceTable.GetValidIndexOfRecords();
+
+            for(int i = 0; i < referenceTableRecords.size(); i++) {
+                if(referenceTableValidIndexOfRecords[i] == 0) continue;
+
+                if(!referenceTableRecords[i].count(referenceFieldName)) continue;
 
                 //只有找到从依赖表中找到对应依赖的值才算符合约束
-                if(sqlTool::CompareAny(currentValue,record.at(referenceFieldName)) == sEqual) {
+                if(sqlTool::CompareAny(currentValue,referenceTableRecords[i].at(referenceFieldName)) == sEqual) {
                     success = 1;
                     break;
                 }
             }
+
+            // for(const auto& record : referenceTable.GetRecords()) {
+            //     if(!record.count(referenceFieldName)) continue;
+
+            //     //只有找到从依赖表中找到对应依赖的值才算符合约束
+            //     if(sqlTool::CompareAny(currentValue,record.at(referenceFieldName)) == sEqual) {
+            //         success = 1;
+            //         break;
+            //     }
+            // }
             if(success == 0)return sConstraintForeignKeyConflict;
         }
 
@@ -746,7 +993,11 @@ int Table::CheckConstraint(std::unordered_map<std::string, std::any>& record, Da
 
             //反外键需唯一
             for(int i = 0; i < records.size(); ++i){
+
+                if(ValidIndexOfRecords[i] == 0) continue;
+
                 if(i == currentRecordIndex) continue;
+
                 auto& otherRecord = records[i];
                 if(otherRecord.count(constraint->GetFieldName()) && sqlTool::CompareAny(otherRecord.at(constraint->GetFieldName()), record.at(constraint->GetFieldName())) == sEqual) {
                     return sBeingRefered;
@@ -797,56 +1048,119 @@ int Table::Insert(std::vector<std::pair<std::string,std::string>> recordsOfIn, D
     if(ret != sSuccess) return ret;
 
     records.push_back(record);
+    ValidIndexOfRecords.push_back(1);//增加valid
+    availableRecordsNum++;
+    //更新索引
+    for(auto & [fieldName, bPlusTree] : indexes) {
+        bPlusTree->insert({record[fieldName]}, std::pair<int, std::unordered_map<std::string, std::any>>(records.size()-1, record));
+        bPlusTree->isValidOfRecord[records.size()-1] = 1;
+    }
+
     return sSuccess;
 }
-int Table::ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any>>& records, const std::vector<std::pair<std::string, std::string>>& values,const std::vector<std::tuple<std::string, std::string, int>>& conditions, Database *db, int checkConstraintsOrNot) {
-    //记录索引用来快速排除本身
-    int index = -1;
-    for(auto& record: records) {
-        index++;
+int Table::ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any>>& records,std::vector<int>& ValidIndexOfRecords, const std::vector<std::pair<std::string, std::string>>& values,const std::vector<std::tuple<std::string, std::string, int>>& conditions, Database *db, int checkConstraintsOrNot) {
 
-        if(CheckCondition(record,conditions) != sSuccess) {
-            continue;
-        }
+    //lambada函数
+    auto modifyRecord = [&](int i, const std::vector<std::pair<std::string, std::string>>& values, bool checkConstraintsOrNot) -> int {
+        auto newRecord = records[i];
 
-
-
-        //直接改
         for(const auto& field : values) {
-            //若原记录该字段已被外键依赖的记录不能改
-            if(CheckBeingRefered(record, db, field.first) == sBeingRefered) return sBeingRefered;
+            if(CheckBeingRefered(newRecord, db, field.first) == sBeingRefered)
+                return sBeingRefered;
 
             if(field.second == "") {
-                if(!record.count(field.first)) continue;
-                record.erase(record.find(field.first));
+                if(!newRecord.count(field.first)) continue;
+                newRecord.erase(field.first);
             }
             else if(fieldMap[field.first] == "int") {
                 for(auto x : field.second) {
-                    if(x > '9' || x < '0') return sDataTypeWrong;
+                    if(x < '0' || x > '9') return sDataTypeWrong;
                 }
-                record[field.first] = std::any(std::stoi(field.second));
+                newRecord[field.first] = std::any(std::stoi(field.second));
             }
             else if(fieldMap[field.first] == "float") {
                 int sum_dot = 0;
                 for (auto x : field.second) {
                     if(x == '.') sum_dot++;
-                    if ((x > '9' || x < '0') && sum_dot>=2)
-                        return sDataTypeWrong;
+                    else if(x < '0' || x > '9') return sDataTypeWrong;
+                    if(sum_dot > 1) return sDataTypeWrong;
                 }
-                record[field.first] = std::any(std::stof(field.second));
+                newRecord[field.first] = std::any(std::stof(field.second));
             }
-            else if (fieldMap[field.first] == "string") {
-                record[field.first] = std::any(field.second);
+            else if(fieldMap[field.first] == "string") {
+                newRecord[field.first] = std::any(field.second);
             }
         }
 
-        //若为测试则需要检查约束
+        ValidIndexOfRecords[i] = 0;
+        records.push_back(newRecord);
+        ValidIndexOfRecords.push_back(1);
+
+        if(!checkConstraintsOrNot) {
+            for(auto& [fieldName, bPlusTree] : indexes) {
+                bPlusTree->isValidOfRecord[i] = 0;
+                bPlusTree->insert({newRecord[fieldName]}, std::pair<int, std::unordered_map<std::string, std::any>>(records.size()-1, newRecord));
+                bPlusTree->isValidOfRecord[records.size()-1] = 1;
+            }
+        }
+
         if(checkConstraintsOrNot) {
-            int ret = CheckConstraint(record, db, records, index);
+            int ret = CheckConstraint(newRecord, db, records, ValidIndexOfRecords, records.size()-1);
             if(ret != sSuccess) return ret;
         }
 
+        return sSuccess;
+    };
+
+    int haveGetAnswer = 0;
+    //若可用索引
+    if(!haveGetAnswer && conditions.size() > 0) {
+        //找到
+        std::vector<int> selectedIndex;
+        for(const auto&condition : conditions) {
+            std::string fieldName = std::get<0>(condition);
+            std::string key = std::get<1>(condition);
+            int compareResult = std::get<2>(condition);
+
+            // printf("FieldName: %s", fieldName.c_str());
+            if(indexes.count(fieldName)) {
+                selectedIndex = indexes[fieldName]->search({sqlTool::AnyToString(key)},compareResult, conditions, this);
+                // printf("useIndexUPDATE: %d\n", selectedIndex.size());
+                haveGetAnswer = true;
+
+                break;
+            }
+        }
+
+        if(haveGetAnswer) {
+            for(auto i : selectedIndex) {
+                printf("%d\n", i);
+                int ret = modifyRecord(i, values, checkConstraintsOrNot);
+                if(ret != sSuccess) return ret;
+            }
+
+        }
     }
+
+    //暴力法
+    if(!haveGetAnswer) {
+        //记录索引用来快速排除本身
+        for(int i = 0; i < records.size(); i++) {
+            // printf("111\n");
+            if(ValidIndexOfRecords[i] == 0) {
+                continue;
+            }
+            if(CheckCondition(records[i],conditions) != sSuccess) {
+                // printf("WDF\n");
+                continue;
+            }
+
+
+            int ret = modifyRecord(i, values, checkConstraintsOrNot);
+            if(ret != sSuccess) return ret;
+        }
+    }
+
 
     return sSuccess;
 }
@@ -875,15 +1189,15 @@ int Table::Update(const std::vector<std::pair<std::string, std::string>>& values
 
     //先测试一次来判断是否能进行该操作后再正式操作数据
     auto testRecords = records;
-
+    auto testValidIndex = ValidIndexOfRecords;
     //记录索引用来快速排除本身
-    int ret = ApplyFieldUpdate(testRecords,values,conditions, db, 1);
+    int ret = ApplyFieldUpdate(testRecords,testValidIndex,values,conditions, db, 1);
 
     //只有测试成功才能对正式数据操作
     if(ret != sSuccess) return ret;
 
     //对真实值进行修改
-    ApplyFieldUpdate(records,values,conditions, db, 0);
+    ApplyFieldUpdate(records, ValidIndexOfRecords ,values, conditions, db, 0);
 
 
     return sSuccess;
@@ -897,22 +1211,107 @@ int Table::Delete(const std::vector<std::tuple<std::string, std::string, int>>& 
         }
     }
 
-    std::vector<int> indexOfDeletings;
-    //遍历记录
-    for(int i = 0; i < records.size(); ++i) {
-        std::unordered_map<std::string, std::any>& record = records[i];
+    int haveGetAnswer = 0;
 
-        //若满足条件且无被依赖则可删
-        if(CheckCondition(record, conditions) == sSuccess) {
-            if(CheckBeingRefered(record,db) == sBeingRefered) return sBeingRefered;
-            indexOfDeletings.push_back(i);
+    //索引法
+    if(!haveGetAnswer && conditions.size() > 0) {
+        std::vector<int> selectedIndex;
+        for(const auto&condition : conditions) {
+            std::string fieldName = std::get<0>(condition);
+            std::string key = std::get<1>(condition);
+            int compareResult = std::get<2>(condition);
+
+            // printf("FieldName: %s", fieldName.c_str());
+            if(indexes.count(fieldName)) {
+                selectedIndex = indexes[fieldName]->search({sqlTool::AnyToString(key)},compareResult, conditions, this);
+                // printf("useIndexDelete: %d", selectedIndex.size());
+                haveGetAnswer = true;
+
+                break;
+            }
+        }
+
+
+        if(haveGetAnswer) {
+            for(auto i : selectedIndex) {
+                std::unordered_map<std::string, std::any>& record = records[i];
+
+                //若满足条件且无被依赖则可删
+                if(CheckCondition(record, conditions) == sSuccess) {
+                    if(CheckBeingRefered(record,db) == sBeingRefered) return sBeingRefered;
+                    // indexOfDeletings.push_back(i);
+                    ValidIndexOfRecords[i] = 0;
+                    availableRecordsNum--;
+                    //更新索引
+                    for(auto & [fieldName, bPlusTree] : indexes) {
+                        bPlusTree->isValidOfRecord[i] = 0;
+                    }
+                }
+            }
         }
     }
-    //反转(使Index从大到小从而保证删除时能正确erase)
-    reverse(indexOfDeletings.begin(), indexOfDeletings.end());
-    for(const auto& x : indexOfDeletings) {
-        records.erase(records.begin() + x);
+
+    //暴力法
+    if(!haveGetAnswer) {
+        //遍历记录(VALID修改替代删除)
+        for(int i = 0; i < records.size(); ++i) {
+            if(ValidIndexOfRecords[i] == 0) continue;
+            std::unordered_map<std::string, std::any>& record = records[i];
+
+            //若满足条件且无被依赖则可删
+            if(CheckCondition(record, conditions) == sSuccess) {
+                if(CheckBeingRefered(record,db) == sBeingRefered) return sBeingRefered;
+                // indexOfDeletings.push_back(i);
+                ValidIndexOfRecords[i] = 0;
+                availableRecordsNum--;
+                //更新索引
+                for(auto & [fieldName, bPlusTree] : indexes) {
+                    bPlusTree->isValidOfRecord[i] = 0;
+                }
+            }
+        }
     }
+
+    //反转(使Index从大到小从而保证删除时能正确erase)
+    // reverse(indexOfDeletings.begin(), indexOfDeletings.end());
+    // for(const auto& x : indexOfDeletings) {
+    //     records.erase(records.begin() + x);
+    // }
+    return sSuccess;
+}
+//---------Index------
+
+int Table::BuildIndex(const std::string& fieldName) {
+    if(!fieldMap.count(fieldName)) return sFieldNotFound;
+
+    // printf("is :%d", indexes.count(fieldName));
+    // printf("size : %d\n", indexes.size());
+    if(indexes.count(fieldName)) return sIndexExisted;
+
+    auto bpt = std::make_shared<bPlusTree>();
+
+    for(int i = 0; i < records.size(); i++) {
+        if(ValidIndexOfRecords[i] == 0) continue;
+
+        bpt->insert({records[i].at(fieldName)},std::pair<int, std::unordered_map<std::string, std::any>>(i, records[i]));
+        bpt->isValidOfRecord[i] = 1;
+    }
+
+    indexes[fieldName] = bpt;
+
+    // indexes[fieldName]->printBPlusTree();
+    return sSuccess;
+}
+
+int Table::DestroyIndex(const std::string& fieldName) {
+    if(!fieldMap.count(fieldName)) return sFieldNotFound;
+
+    if(!indexes.count(fieldName)) return sIndexNotFound;
+
+    auto it = indexes.find(fieldName);
+
+    indexes.erase(it);
+
     return sSuccess;
 }
 

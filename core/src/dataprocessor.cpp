@@ -500,14 +500,14 @@ int DataProcessor::AlterTableConstraint(std::string tableName, Constraint* const
     //检查权限
     if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::ALTER) != sSuccess) return sInsufficientAuthority;
 
-    auto it = constraintMap.find(constraint->GetConstraintName());
-    if(it == constraintMap.end()) {
-        printf("nm\n");
-    }  else {
-        printf("lll\n");
-    }
+    // auto it = constraintMap.find(constraint->GetConstraintName());
+    // if(it == constraintMap.end()) {
+    //     printf("nm\n");
+    // }  else {
+    //     printf("lll\n");
+    // }
 
-    printf("%s\n", constraint->GetConstraintName().c_str());
+    // printf("%s\n", constraint->GetConstraintName().c_str());
     //若已存在返回sConstraintNameExisted
     if(constraintMap.count(constraint->GetConstraintName())) return sConstraintNameExisted;
     //反之对该表进行加约束操作
@@ -604,6 +604,7 @@ int DataProcessor::ShowConstraints(std::vector<std::vector<std::any>>& retRecord
             }
         }
     }
+
     return sSuccess;
 }
 //------------DML----------
@@ -648,6 +649,7 @@ int DataProcessor::Select(std::vector<std::string> tablesName,
     if (currentDatabase == nullptr) {
         return sDatabaseNotUse;
     }
+
     for(const auto &tableName : tablesName) {
         if(currentDatabase->FindTable(tableName) != sSuccess) {
             return sTableNotFound;
@@ -739,7 +741,46 @@ int DataProcessor::Delete(const std::string& tableName,const std::vector<std::tu
     return ret;
 }
 
+//----------Index------
+int DataProcessor::BuildIndex(const std::string& tableName,const std::string& fieldName) {
+    if(currentUserName.empty()) {
+        return sUserNotLogin;
+    }
+    if (currentDatabase == nullptr) {
+        return sDatabaseNotUse;
+    }
 
+    if(currentDatabase->FindTable(tableName) != sSuccess) {
+        return sTableNotFound;
+    }
+
+    //检查权限
+    if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::INDEX) != sSuccess) return sInsufficientAuthority;
+
+    int ret = currentDatabase->BuildIndex(tableName, fieldName);
+
+    return ret;
+}
+
+int DataProcessor::DestroyIndex(const std::string& tableName,const std::string& fieldName) {
+    if(currentUserName.empty()) {
+        return sUserNotLogin;
+    }
+    if (currentDatabase == nullptr) {
+        return sDatabaseNotUse;
+    }
+
+    if(currentDatabase->FindTable(tableName) != sSuccess) {
+        return sTableNotFound;
+    }
+
+    //检查权限
+    if(currentUser->CheckAuthority(currentDatabaseName, tableName, authorityNum::INDEX) != sSuccess) return sInsufficientAuthority;
+
+    int ret = currentDatabase->DestroyIndex(tableName, fieldName);
+
+    return ret;
+}
 
 
 //---------File-------
@@ -778,10 +819,10 @@ int DataProcessor::Read(bool isPrint) {
         FileManager::GetInstance().ReadTablesFile(database.GetDatabaseName(),
                                                   tables);
 
-        //恐有问题
-        database.SetTables(tables);
 
+        database.SetTables(tables);
         if (isPrint) {
+            //恐有问题
             std::cout << " - " << tables.size() << std::endl;
             for (const auto& table : tables) {
                 std::cout << " - - " << table.GetTableName() << std::endl;
@@ -814,7 +855,7 @@ int DataProcessor::Read(bool isPrint) {
     }
     //更新约束Map
     UpdateConstraintMap();
-    return 0;
+    return sSuccess;
 }
 
 //-----------权限操作--------
@@ -993,13 +1034,17 @@ int DataProcessor::GrantAuthority(const std::string& userName,const std::string&
 }
 
 //(只有root能进行)收回用户数据库所有权(不清除之前数据库拥有者的使用权)
-int DataProcessor::RevokeDatabaseOwner(const std::string& databaseName) {
+int DataProcessor::RevokeDatabaseOwner(const std::string& databaseName, const std::string& userName) {
     if(!isRoot()) {
         return sInsufficientAuthority;
     }
 
+
     for(auto& database : databases) {
         if(database.GetDatabaseName() == databaseName) {
+
+            if(userName != "" && userName != database.GetOwnerUser()) return sUserNotCurrDBOwner;
+
             database.SetOwnerUser("");
         }
     }
