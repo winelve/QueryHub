@@ -336,6 +336,125 @@ foregin_key(reference_tb,reference_column)
 }
 
 
+//----------------COMMIT
+
+{
+    "cmd": "commit",
+    "data": {
+        "op":"commit",
+        "object": "database"
+    }
+}
+
+{
+    "cmd":"rollback",
+    "data": {
+        "op":"rollback",
+        "object": "database"
+    }
+}
+
+
+
+//-------------------INDEX
+//create index on tb cname;
+//drop index on tb cname;
+{
+    "cmd": "create",
+    "data": {
+        "op":"index",
+        "object": "table",
+        "tb_name": "name",
+        "cname": "name"
+    }
+}
+
+{
+    "cmd": "drop",
+    "data": {
+        "op":"index",
+        "object": "table",
+        "tb_name": "name",
+        "cname": "name"
+    }
+}
+
+
+-----LOGIN------------
+// login username p pwd;
+{
+    "cmd": "login",
+    "data": {
+        "op":"login",
+        "object": "database",
+        "username": "",
+        "pwd": ""
+    }
+}
+
+// register wyq 123456;
+{
+    "cmd": "register",
+    "data": {
+        "op": "register",
+        "object": "user",
+        "username": "name",
+        "pwd": "pwd"
+    }
+}
+
+
+
+//----------GRANT--------------
+// GRANT 	OWNER	 ON	 db_name 	TO	 user_name
+{
+    "cmd": "grant",
+    "data": {
+        "op":"grant",
+        "object": "database",
+        "db_name": "name",
+        "username": "name"
+    }
+}
+
+// ----------------grant----------
+
+{
+    "cmd": "grant",
+    "data": {
+        "op":"grant",
+        "object": "table",
+        "power":["SELECT","..."],
+        "db_name": "name",
+        "tb_name": "name",
+        "username": "name"
+    }
+}
+
+
+// REVOKE	OWNER 	ON	db_name	[FROM	user_name]
+{
+    "cmd": "revoke",
+    "data": {
+        "op":"revoke",
+        "object": "database",
+        "db_name": "name",
+        "username": "name"
+    }
+}
+//REVOKE        (a1,a2,a3 | *)        ON         (db_name.tb_name | db_name.* | *.*)   FROM user_name
+{
+    "cmd": "revoke",
+    "data": {
+        "op":"revoke",
+        "object": "table",
+        "power":["SELECT","..."],
+        "db_name": "name",
+        "tb_name": "name",
+        "username": "name"
+}
+
+
 
 
 
@@ -389,7 +508,9 @@ foregin_key(reference_tb,reference_column)
                 "constraint": {
                     "func":["AlterTableDeleteConstraint"],
                     "keys":["tb_name","cname","cs_name"]
-                }
+                },
+                
+                
             }
         },
         
@@ -403,7 +524,13 @@ foregin_key(reference_tb,reference_column)
                 "table": {
                     "func":["CreateTable"],
                     "keys": ["name", "columns"]
-                }
+                },
+				"index": {
+                	"table": {
+                    	"func": ["BuildIndex"],
+                    	"keys": ["tb_name", "cname"]
+                	}
+            	}  
             }
         },
         
@@ -418,6 +545,12 @@ foregin_key(reference_tb,reference_column)
                 "table": {
                     "func":["DropTable"],
                     "keys": ["name"]
+                },
+				"index": {
+                    "table": {
+                        "func": ["DestroyIndex"],
+                        "keys": ["tb_name", "cname"]
+                    }
                 }
             }
         },
@@ -502,10 +635,88 @@ foregin_key(reference_tb,reference_column)
             }
             
             
+        },
+        //-----------------------------------------------------------
+        
+        {
+            "cmd": "commit",
+            "commit": {
+                "database": {
+                    "func": ["Write"],
+                    "keys": []
+                }
+            }
+        },
+        
+        {
+            "cmd": "rollback",
+            "rollback": {
+                "database": {
+                    "func": ["Read"],
+                    "keys": []
+                }
+            }
+        },
+        
+//--------------------------
+        
+        
+        {
+            "cmd": "login",
+            "login": {
+                "database": {
+                    "func": ["Login"],
+                    "keys": ["username", "pwd"]
+                }
+            }
+        },
+        
+        {
+          	"cmd": "register",
+            "register": {
+                "user": {
+                    "func":["CreateUser"],
+                    "keys":["username","pwd"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "grant",
+            "grant": {
+                "database": {
+                    "func": ["GrantDatabaseOwner"],
+                    "keys": ["db_name", "username"]
+                },
+                "table": {
+                    "func": ["GrantAuthority"],
+                    "keys": [ "username", "db_name", "tb_name","power"]
+                }
+            }
+        },
+        
+        {
+            "cmd": "revoke",
+            "revoke": {
+                "database": {
+                    "func": ["RevokeDatabaseOwner"],
+                    "keys": ["db_name", "username"]
+                },
+                "table": {
+                    "func": ["RevokeAuthority"],
+                    "keys": ["username", "db_name", "tb_name", "power"]
+                }
+            }
         }
+    
 
     ]
 }
+
+////--------------------------------------
+
+
+
 
 
 

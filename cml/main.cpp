@@ -54,12 +54,53 @@ void test_sql() {
 }
 
 
+// int main() {
+
+//     QList<QString> create_sqls = {
+//         "SHOW DATABASES;",
+//         "CREATE DATABASE my_db;",
+//         "USE my_db;",
+//         "CREATE TABLE class (classname string primary_key, nums int default(0));",
+//         "CREATE TABLE student (id int primary_key, age string, sex string default(m), classname string);",
+//     };
+
+//     QList<QString> show_sqls = {
+//         "USE new_db;",
+//         "ALTER TABLE student RENAME TO stud;",
+//         "SHOW TABLES;"
+//     };
+
+//     QList<int> orders =  {0,1,2};
+//     // QList<int> orders =  {0,1,2,3,4};
+
+//     DataProcessor::GetInstance().Read(0);
+//     DataProcessor::GetInstance().CreateUser("root","123456");
+//     DataProcessor::GetInstance().Login("root","123456");
+
+//     Parser p;
+//     Executor e;
+
+//     for(int i: orders) {
+//         QString sql = show_sqls[i];
+//         QJsonDocument send_doc;
+//         QJsonObject ast_root = p.parse_sql(sql);
+//         int res = e.execute_ast(ast_root,send_doc);
+//         qDebug() << "return code:" << res;
+//         qDebug() << "\n\n";
+//     }
+
+//     DataProcessor::GetInstance().Write();
+//     return 0;
+// }
+
+
+
 int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv); // Create the application with event loop
 
     DataProcessor::GetInstance().Read(0);
-    DataProcessor::GetInstance().CreateUser("root","123456");
-    DataProcessor::GetInstance().Login("root","123456");
+    // DataProcessor::GetInstance().CreateUser("root","123456");
+    // DataProcessor::GetInstance().Login("root","123456");
 
     Server server(8080);             // Start server on port 8080
     qDebug() << "Server is running...";
@@ -136,4 +177,6 @@ int main(int argc, char *argv[]) {
 //     DataProcessor::GetInstance().Write();
 //     return 0;
 // }
+
+
 

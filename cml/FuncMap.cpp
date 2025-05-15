@@ -50,6 +50,8 @@ void FuncMap::setup() {
         QString tb_name = params[0].toString();
         QJsonArray columns = params[1].toJsonArray();
 
+        qDebug() << "!!!!!!!!!!!!!!!!!!!!!!debugger:" << columns ;
+
         std::vector<std::pair<std::string, std::string>> fields;
         std::vector<Constraint *> constraints;
 
@@ -79,9 +81,10 @@ void FuncMap::setup() {
                 }
             }
         }
-        qDebug() << "size: " << constraints.size();
+        qDebug() << "size: " << fields.size();
 
         // 组织传递JsDoc内容
+
         int code = db.CreateTable(tb_name.toStdString(), fields, constraints);
         QString func = "CreateTable";
         QJsonArray data;
@@ -428,12 +431,14 @@ void FuncMap::setup() {
         std::vector<std::pair<std::string, std::string>> values;
         std::vector<std::tuple<std::string, std::string, int>> conditions;
 
+
         for(const auto& v : set_values) {
             QJsonObject val = v.toObject();
             QString cname = val["cname"].toString();
             QString val_str = val["values"].toString();
             values.push_back(std::pair<std::string, std::string>(cname.toStdString(), val_str.toStdString()));
         }
+
         for(const auto& c : where) {
             QJsonObject cond = c.toObject();
             QString l = cond["left"].toString();
@@ -442,8 +447,14 @@ void FuncMap::setup() {
             conditions.push_back(std::make_tuple(l.toStdString(), r.toStdString(), map_operator(op)));
         }
 
+
+        qDebug() << tableName;
+        qDebug() << values;
+        qDebug() << conditions.size();
+
         // 组织传递JsDoc内容
         int code = db.Update(tableName, values, conditions);
+
         QString func = "Update";
         QJsonArray data;
         returnData = makeJsDocument(code, func, data);
@@ -474,6 +485,131 @@ void FuncMap::setup() {
 
         return code;
     };
+
+
+    func_map_["Write"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+
+        int code = db.Write();
+        QString func = "Write";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["Read"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        int code = db.Read(0);
+        QString func = "Read";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["Login"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        QString userName = params[0].toString();
+        QString userPassword = params[1].toString();
+
+        int code = db.Login(userName.toStdString(),userPassword.toStdString());
+        QString func = "Login";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["CreateUser"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        QString userName = params[0].toString();
+        QString userPassword = params[1].toString();
+
+        int code = db.CreateUser(userName.toStdString(),userPassword.toStdString());
+        QString func = "CreateUser";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["GrantDatabaseOwner"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        QString db_name = params[0].toString();
+        QString user_name = params[1].toString();
+
+        int code = db.GrantDatabaseOwner(db_name.toStdString(),user_name.toStdString());
+        QString func = "GrantDatabaseOwner";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["GrantAuthority"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        QString username = params[0].toString();
+        QString db_name = params[1].toString();
+        QString tb_name = params[2].toString();
+        QString power = params[3].toString();
+
+        int code = db.GrantAuthority(username.toStdString(),db_name.toStdString(),tb_name.toStdString(),power.toStdString());
+        QString func = "GrantAuthority";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["RevokeDatabaseOwner"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        qDebug() << "0.----------------------------------";
+        QString db_name = params[0].toString();
+        QString user_name = params[1].toString();
+
+        qDebug() << "1.----------------------------------";
+        int code = db.RevokeDatabaseOwner(db_name.toStdString(),user_name.toStdString());
+        qDebug() << "2.----------------------------------";
+        QString func = "RevokeDatabaseOwner";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["RevokeAuthority"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        QString username = params[0].toString();
+        QString db_name = params[1].toString();
+        QString tb_name = params[2].toString();
+        QString power = params[3].toString();
+
+        int code = db.GrantAuthority(username.toStdString(),db_name.toStdString(),tb_name.toStdString(),power.toStdString());
+        QString func = "RevokeAuthority";
+        QJsonArray data;
+        returnData = makeJsDocument(code,func,data);
+
+        return code;
+    };
+
+    func_map_["BuildIndex"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+
+        QString tb_name = params[0].toString();
+        QString cname = params[1].toString();
+
+        int code = db.BuildIndex(tb_name.toStdString(),cname.toStdString());
+        QString func = "BuildIndex";
+        QJsonArray data;
+
+        returnData = makeJsDocument(code,func,data);
+        return code;
+    };
+
+    func_map_["DestroyIndex"] = [this](const QVariantList &params, QJsonDocument& returnData) -> int {
+        QString tb_name = params[0].toString();
+        QString cname = params[1].toString();
+
+        int code = db.DestroyIndex(tb_name.toStdString(),cname.toStdString());
+        QString func = "DestroyIndex";
+        QJsonArray data;
+
+        returnData = makeJsDocument(code,func,data);
+        return code;
+    };
+
 }
 
 void FuncMap::read_js_file() {

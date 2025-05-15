@@ -27,6 +27,7 @@ Table::Table(const std::string &tableName,
         ValidIndexOfRecords.push_back(1);
         // printf("ValidIndexOfRecords: %d\n", ValidIndexOfRecords.size());
     }
+
     for(const auto&key : indexKey) {
         BuildIndex(key);
     }
@@ -1122,7 +1123,7 @@ int Table::ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any
             std::string key = std::get<1>(condition);
             int compareResult = std::get<2>(condition);
 
-            // printf("FieldName: %s", fieldName.c_str());
+            // printf("FieldName: %s\n", fieldName.c_str());
             if(indexes.count(fieldName)) {
                 selectedIndex = indexes[fieldName]->search({sqlTool::AnyToString(key)},compareResult, conditions, this);
                 // printf("useIndexUPDATE: %d\n", selectedIndex.size());
@@ -1134,7 +1135,7 @@ int Table::ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any
 
         if(haveGetAnswer) {
             for(auto i : selectedIndex) {
-                printf("%d\n", i);
+                // printf("%d\n", i);
                 int ret = modifyRecord(i, values, checkConstraintsOrNot);
                 if(ret != sSuccess) return ret;
             }
@@ -1145,18 +1146,21 @@ int Table::ApplyFieldUpdate(std::vector<std::unordered_map<std::string, std::any
     //暴力法
     if(!haveGetAnswer) {
         //记录索引用来快速排除本身
-        for(int i = 0; i < records.size(); i++) {
-            // printf("111\n");
-            if(ValidIndexOfRecords[i] == 0) {
+        int size = records.size();
+        for(int j = 0; j < size; j++) {
+            // printf("%d\n", j);
+            if(ValidIndexOfRecords[j] == 0) {
                 continue;
             }
-            if(CheckCondition(records[i],conditions) != sSuccess) {
+
+            // printf("WC\n");
+            if(CheckCondition(records[j],conditions) != sSuccess) {
                 // printf("WDF\n");
                 continue;
             }
 
 
-            int ret = modifyRecord(i, values, checkConstraintsOrNot);
+            int ret = modifyRecord(j, values, checkConstraintsOrNot);
             if(ret != sSuccess) return ret;
         }
     }

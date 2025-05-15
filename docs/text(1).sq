@@ -1,0 +1,103 @@
+
+create database xt;
+create database wyq;
+
+show databases;
+
+drop database wyq;
+
+show databases;
+
+
+use xt;
+
+
+create table student(sno string primary_key, sname string, age int, address string);
+create table course(cno string primary_key, cname string);
+
+create table sc(sno string, cno string, cname string);
+
+create table teacher(tno string primary_key, tname string);
+
+show tables;
+
+
+drop table teacher;
+
+
+show tables;
+
+desc sc;
+
+alter table sc add grade string;
+alter table sc modify grade int;
+alter table sc drop cname;
+
+desc sc;
+
+
+
+alter table sc add constraint sno foregin_key(student, sno);
+alter table sc add constraint cno foregin_key(course, cno);
+alter table sc add constraint grade default(66);
+
+desc sc;
+
+alter table sc delete constraint grade default;
+
+desc sc;
+
+
+
+insert into student (sno, sname, age, address) values (23301082, xt, 19, beijing);
+insert into student (sno, sname, age, address) values (23301076, wyq, 19, beijing);
+insert into student (sno, sname, age, address) values (23301000, cat, 200, jiangxi);
+
+select (*) from student;
+
+insert into course (cno, cname) values (1, sleep);
+insert into course (cno, cname) values (2, eat);
+insert into course (cno, cname) values (3, play);
+
+select (*) from course;
+
+insert into sc (sno, cno, grade) values (23301082, 1, 66);
+insert into sc (sno, cno, grade) values (23301082, 2, 90);
+insert into sc (sno, cno, grade) values (23301082, 3, 80);
+insert into sc (sno, cno, grade) values (23301076, 2, 77);
+insert into sc (sno, cno, grade) values (23301076, 3, 77);
+insert into sc (sno, cno, grade) values (23301000, 3, 59);
+
+select (*) from sc;
+
+
+insert into student (sno, sname, age, address) values (23301082, xt, 20, jiangxi);
+
+select (*) from student;
+
+
+insert into sc (sno, course, grade) values (24301000, 3, 88);
+
+
+select (*) from sc;
+
+update sc set (grade = 60) where (cno = 3 AND grade < 60);
+
+select (*) from sc;
+
+update student set (age = 20, address = jiangxi) where (sno = 23301082);
+
+select (*) from student;
+
+
+delete sc where (cno = 2 AND grade < 80);
+
+select (*) from sc;
+
+delete course where (cname = eat);
+
+
+select (sno) from sc where (cno = 3);
+
+
+select (*) from student where (cno = 3 and address = beijing) join (sc) order by (sno);
