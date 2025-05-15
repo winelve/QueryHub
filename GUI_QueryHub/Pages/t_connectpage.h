@@ -7,12 +7,16 @@
 #include "ElaPushButton.h"
 #include "ElaText.h"
 #include "ElaIcon.h"
+#include <QVector>
 
 class T_ConnectPage : public QWidget
 {
     Q_OBJECT
 public:
     explicit T_ConnectPage(QWidget *parent = nullptr);
+    QVector<QString> getLinkMember(){
+        return link_member;
+    }
 
 signals:
     void connectionCreated(const QString& connectionName);
@@ -34,6 +38,7 @@ private:
     ElaPushButton *m_connectBtn;
     ElaPushButton *m_cancelBtn;
 
+    QVector<QString> link_member;
     bool link_status = false;
 };
 

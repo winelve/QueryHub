@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(GUI_QueryHub VERSION 0.1 LANGUAGES CXX)
 
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -43,6 +44,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Pages/t_tableview.h Pages/t_tableview.cpp
         modle/t_tableviewmodel.h modle/t_tableviewmodel.cpp
         Pages/t_select.h Pages/t_select.cpp
+        client/client.cpp client/client.h
 
 
 
