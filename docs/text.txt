@@ -1,0 +1,124 @@
+//DDL
+
+
+//创建数据库
+create database xt;
+create database wyq;
+
+show databases;
+
+
+//删除数据库
+drop database wyq;
+
+show databases;
+
+
+//使用数据库xt
+use xt;
+
+
+//创建表
+create table student(sno string primary_key, sname string, age int, address string);
+create table course(cno string primary_key, cname string);
+
+//sc目前有问题用下面的sc
+create table sc(sno string, cno string, cname string);
+
+create table teacher(tno string primary_key, tname string);
+
+show tables;
+
+
+//删除表
+drop table teacher;
+
+
+show tables;
+
+desc sc;
+//表的修改
+
+//添加列
+alter table sc add grade string;
+//修改列类型
+alter table sc modify grade int;
+//删除列
+alter table sc drop cname;
+
+desc sc;
+//约束
+
+//添加约束(外键)
+alter table sc add constraint sno foregin_key(student, sno);
+alter table sc add constraint cno foregin_key(course, cno);
+alter table sc add constraint grade default(66);
+
+desc sc;
+//删除约束
+alter table sc delete constraint grade default;
+
+desc sc;
+
+//DML
+
+//插入记录
+
+insert into student (sno, sname, age, address) values (23301082, xt, 19, beijing);
+insert into student (sno, sname, age, address) values (23301076, wyq, 19, beijing);
+insert into student (sno, sname, age, address) values (23301000, cat, 200, jiangxi);
+
+select (*) from student;
+
+insert into course (cno, cname) values (1, sleep);
+insert into course (cno, cname) values (2, eat);
+insert into course (cno, cname) values (3, play);
+
+select (*) from course;
+
+insert into sc (sno, cno, grade) values (23301082, 1, 66);
+insert into sc (sno, cno, grade) values (23301082, 2, 90);
+insert into sc (sno, cno, grade) values (23301082, 3, 80);
+insert into sc (sno, cno, grade) values (23301076, 2, 77);
+insert into sc (sno, cno, grade) values (23301076, 3, 77);
+insert into sc (sno, cno, grade) values (23301000, 3, 59);
+
+select (*) from sc;
+
+//主键问题
+insert into student (sno, sname, age, address) values (23301082, xt, 20, jiangxi);
+
+select (*) from student;
+
+//外键问题
+insert into sc (sno, course, grade) values (24301000, 3, 88);
+
+
+select (*) from sc;
+
+//更新记录
+update sc set (grade = 60) where (cno = 3 AND grade < 60);
+
+select (*) from sc;
+
+
+update student set (age = 20, address = jiangxi) where (sno = 23301082);
+
+select (*) from student;
+//删除记录
+
+delete sc where (cno = 2 AND grade < 80);
+
+delete course where (cname = eat);//被外键依赖 无法删除
+
+
+//DQL
+
+//单表查询
+
+select (sno) from sc where (cno = 3);
+
+//多表查询
+
+
+select (*) from student where (cno = 2 and address = beijing) join sc order by (sno);

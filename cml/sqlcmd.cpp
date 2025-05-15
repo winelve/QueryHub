@@ -443,6 +443,7 @@ QJsonObject DMLParser::parseCMD(const QString &sql) {
                 qWarning() << "无法解析 SET 子句部分:" << item.trimmed();
             }
         }
+
         ast_data["set_values"] = setValuesArray;
 
         // 3. 解析 WHERE 子句 (可选的捕获组 3)
