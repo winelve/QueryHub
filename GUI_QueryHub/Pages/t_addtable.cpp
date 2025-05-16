@@ -10,12 +10,13 @@
 #include "ElaComboBox.h"
 #include "ElaIconButton.h"
 #include "ElaCheckBox.h"
+#include "client.h"
 
 T_AddTable::T_AddTable(QWidget* parent)
     : T_BasePage(parent)
 {
     createCustomWidget("创建新的数据表");
-
+    // Client client = m_mainWindow->getclients_map_().constBegin().value();
     // 主容器
     QWidget* centralWidget = new QWidget(this);
     centralWidget->setWindowTitle("新建表");
@@ -40,6 +41,12 @@ T_AddTable::T_AddTable(QWidget* parent)
     m_dbComboBox->setPlaceholderText("请选择数据库");
     m_dbComboBox->setFixedHeight(30);
     m_dbComboBox->setBorderRadius(8);
+    // std::vector<std::string> databases = client.get_all_database();
+    // // 填充 ComboBox
+    //     for (const auto& db : databases) {
+    //     m_dbComboBox->addItem(QString::fromStdString(db));
+    // }
+    // m_dbComboBox->setCurrentIndex(-1); // 默认无选中
 
     dbLayout->addWidget(dbIcon);
     dbLayout->addWidget(dbLabel);

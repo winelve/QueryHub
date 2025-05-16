@@ -76,8 +76,9 @@ void T_AddDataBase::onConfirmClicked()
         ElaMessageBar::warning(ElaMessageBarType::Bottom, "警告", "数据库名称不能为空!", 2500, this);
         return;
     }
+    QString sql = "create database " + dbName + ";";
 
-    emit databaseCreated(dbName);
+    emit databaseCreated(sql);
 }
 
 T_AddDataBase::~T_AddDataBase()

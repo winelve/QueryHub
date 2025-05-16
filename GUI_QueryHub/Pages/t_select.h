@@ -29,6 +29,7 @@ public:
 
     void lineNumberAreaPaintEvent(QPaintEvent* event); // 绘制行号
     int lineNumberAreaWidth(); // 计算行号区域宽度
+    QString getSelectedText() const; // 获取选中文本
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -52,14 +53,15 @@ public:
     explicit T_Select(QWidget* parent = nullptr);
     ~T_Select();
 
-    QString getQueryText() const; // 获取查询文本
-    void resetResults(); // 重置结果
-    void executeQuery(const std::vector<std::vector<std::string>>& tableData); // 执行查询
+    QString getQueryText() const; // 修改：优先获取选中文本
+    void resetResults();
+    void executeQuery(const std::vector<std::vector<std::string>>& tableData);
 
 private:
-    CodeEditor* _queryEdit; // 自定义编辑器
-    ElaTabWidget* _resultTabs; // 结果标签页
-    int _resultCount; // 结果计数
+    CodeEditor* _queryEdit;
+    ElaTabWidget* _resultTabs;
+    int _resultCount;
+
 };
 
 #endif // T_SELECT_H
