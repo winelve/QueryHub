@@ -49,7 +49,7 @@ int DataProcessor::CreateUser(const std::string& userName,const std::string& use
     if(currentUser != nullptr) {
         //更新当前User
         for(auto &user : users) {
-            if(userName == currentUserName) {
+            if(user.getUserName() == currentUserName) {
                 currentUser = &user;
                 return sSuccess;
             }
@@ -128,6 +128,8 @@ int DataProcessor::CreateDatabase(std::string databaseName){
     //to do
     databases.push_back(Database(databaseName, currentUserName));
 
+    GrantAuthority(currentUserName, databaseName, "*", "all");
+
     return sSuccess;
 }
 
@@ -145,6 +147,7 @@ int DataProcessor::DeleteDatabase(std::string databaseName) {
             if(!isRoot() && !isDatabaseOwner(databaseName)) return sInsufficientAuthority;
 
 
+
             if(currentDatabase != nullptr) {
                 if(currentDatabaseName == databaseName) {
                     currentDatabase = nullptr;
@@ -159,8 +162,8 @@ int DataProcessor::DeleteDatabase(std::string databaseName) {
                 user.RevokeAllDatabaseAndTableAuthorities(databaseName);
             }
 
-
             databases.erase(databases.begin() + i);
+
             for (auto& database : databases) {
                 if (database.GetDatabaseName() == currentDatabaseName) {
                     //若删的不是当前数据库则再还原反之currentDatabase = nullptr则表当前未选择数据库
@@ -302,6 +305,19 @@ int DataProcessor::CreateTable(std::string tableName, std::vector<std::pair<std:
         UpdatePointer();
         UpdateConstraintMap();
         UpdatePointer();
+
+        //给予表权限
+        currentUser->GrantAllTableAuthorities(currentDatabaseName, tableName);
+        std::string databaseOwnerName = currentDatabase->GetOwnerUser();
+        if(!databaseOwnerName.empty()) {
+            for(auto &user: users) {
+                if(user.getUserName() == databaseOwnerName) {
+                    user.GrantAllTableAuthorities(currentDatabaseName, tableName);
+                    break;
+                }
+            }
+        }
+
     }
     return ret;
 }
@@ -320,7 +336,12 @@ int DataProcessor::DropTable(std::string tableName) {
     int w = currentDatabase->DropTable(tableName);
     if(w == sSuccess) {
         UpdatePointer();
+        //删除权限
+        for(auto &user: users) {
+            user.RevokeAllTableAuthorities(currentUserName, tableName);
+        }
     }
+
     return w;
 }
 
@@ -941,7 +962,7 @@ int DataProcessor::GrantAuthority(const std::string& userName,const std::string&
             for(auto &database : databases) {
                 if(database.GetDatabaseName() == databaseName) {
 
-                    if(authority == "all") {
+                    if(authority == "*") {
                         //若为全部权限
 
                         //数据库级权限
@@ -1094,7 +1115,7 @@ int DataProcessor::RevokeAuthority(const std::string& userName,const std::string
             for(auto &database : databases) {
                 if(database.GetDatabaseName() == databaseName) {
 
-                    if(authority == "all") {
+                    if(authority == "*") {
                         //若为全部权限
 
                         //数据库级权限
@@ -1129,6 +1150,8 @@ int DataProcessor::RevokeAuthority(const std::string& userName,const std::string
 
                         //寻找该权限
                         auto it = strToAuthorityNum.find(authority);
+
+                        printf("num: %d\n", it);
                         //若找到
                         if (it != strToAuthorityNum.end()) {
                             const authorityNum& currAuthority = it->second;

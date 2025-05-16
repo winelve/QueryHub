@@ -159,32 +159,38 @@ int User::GrantAllDatabaseAuthorities(const std::string& databaseName) {
 //收回数据库级对应权限
 int User::RevokeAuthority(const std::string& databaseName,const authorityNum& number) {
     if(CheckAuthority(databaseName, number) != sSuccess) return sAuthorityNotFound;
-    for(int i = 0; i < authorities.size(); ++i) {
-        const auto& authority = authorities[i];
-        if(authority.databaseName == databaseName && authority.tableName == "" && authority.number == number) {
-            authorities.erase(authorities.begin() + i);
-            return sSuccess;
+    printf("num: %d\n", number);
+    for (auto it = authorities.begin(); it != authorities.end(); ) {
+        if (it->databaseName == databaseName && it->tableName == "" && it->number == number) {
+            it = authorities.erase(it);
+        } else {
+            ++it;
         }
     }
     return sSuccess;
 }
+
 //收回表级对应权限
 int User::RevokeAuthority(const std::string& databaseName,const std::string& tableName,const authorityNum& number) {
     if(CheckAuthority(databaseName, tableName, number) != sSuccess) return sAuthorityNotFound;
-    for(int i = 0; i < authorities.size(); ++i) {
-        const auto& authority = authorities[i];
-        if(authority.databaseName == databaseName && authority.tableName == tableName && authority.number == number) {
-            authorities.erase(authorities.begin() + i);
-            return sSuccess;
+
+    printf("num: %d\n", number);
+
+    for (auto it = authorities.begin(); it != authorities.end(); ) {
+        if (it->databaseName == databaseName && it->tableName == tableName && it->number == number) {
+            it = authorities.erase(it);
+        } else {
+            ++it;
         }
     }
+
     return sSuccess;
 }
 //收回表级全部权限
 int User::RevokeAllTableAuthorities(const std::string& databaseName,const std::string& tableName) {
     for(auto it = authorities.begin(); it != authorities.end();) {
         if(it->databaseName == databaseName && it->tableName == tableName) {
-            authorities.erase(it);
+           it =  authorities.erase(it);
         }
         else it++;
     }
@@ -194,20 +200,23 @@ int User::RevokeAllTableAuthorities(const std::string& databaseName,const std::s
 int User::RevokeAllDatabaseAuthorities(const std::string& databaseName) {
     for(auto it = authorities.begin(); it != authorities.end();) {
         if(it->databaseName == databaseName && it->tableName == "") {
-            authorities.erase(it);
+            it = authorities.erase(it);
         }
-        else it++;
+        else {
+            it++;
+        }
     }
     return sSuccess;
 }
 
 //收回对该数据库的所有权限
 int User::RevokeAllDatabaseAndTableAuthorities(const std::string& databaseName) {
-    for(auto it = authorities.begin(); it != authorities.end();) {
-        if(it->databaseName == databaseName) {
-            authorities.erase(it);
+    for (auto it = authorities.begin(); it != authorities.end(); ) {
+        if (it->databaseName == databaseName) {
+            it = authorities.erase(it);
+        } else {
+            ++it;
         }
-        else it++;
     }
     return sSuccess;
 }
