@@ -209,13 +209,14 @@ int Table::AlterTableDrop(std::string fieldName, Database* db) {
             db->FindTableReference(reference_table_name).DropForeignReferedConstraint(tableName, fieldName);
         }
         delete (*it);
-        constraints.erase(it);
+        it = constraints.erase(it);
 
     }
 
 
     //删除记录中的相应字段(不实际删而是修改Valid)
-    for(int i = 0; i < records.size(); i++) {
+    int size = records.size();
+    for(int i = 0; i < size; i++) {
 
         if(ValidIndexOfRecords[i] == 0) continue;
 
@@ -263,6 +264,8 @@ int Table::AlterTableModify(std::pair<std::string, std::string> field) {
     //若已存在则直接返回
     if(fieldMap[field.first] == field.second) return sSuccess;
 
+    printf("wdh/n");
+
     //遍历约束检查该字段是否可MODIFY
     for(const auto& constraint : constraints) {
         if(dynamic_cast<const ForeignKeyConstraint *>(constraint) != nullptr && dynamic_cast<const ForeignKeyConstraint *>(constraint)->GetFieldName()==field.first)
@@ -288,6 +291,7 @@ int Table::AlterTableModify(std::pair<std::string, std::string> field) {
 
     }
 
+    printf("nnd/n");
     // for(auto& record: records) {
     //     if(!record.count(field.first)) {
     //         continue;
@@ -309,7 +313,8 @@ int Table::AlterTableModify(std::pair<std::string, std::string> field) {
 
 
     //valid写法修改记录
-    for(int i = 0; i < records.size(); i++) {
+    int size = records.size();
+    for(int i = 0; i < size; i++) {
 
         if(ValidIndexOfRecords[i] == 0) continue;
 
@@ -328,6 +333,7 @@ int Table::AlterTableModify(std::pair<std::string, std::string> field) {
         ValidIndexOfRecords.push_back(1);
     }
 
+    printf("wdddddf/n");
 
     // for(auto& record: records) {
     //     if(!record.count(field.first)) {
@@ -363,7 +369,8 @@ int Table::AlterTableColumnName(std::string columnName, std::string newColumnNam
     //更新表内容
 
     //valid写法修改记录
-    for(int i = 0; i < records.size(); i++) {
+    int size = records.size();
+    for(int i = 0; i < size; i++) {
 
         if(ValidIndexOfRecords[i] == 0) continue;
 
@@ -400,7 +407,7 @@ int Table::AlterTableColumnName(std::string columnName, std::string newColumnNam
     auto it = fieldMap.find(columnName);
     if(it != fieldMap.end()) {
         std::string type = it->second;
-        fieldMap.erase(it);
+        it = fieldMap.erase(it);
         fieldMap[newColumnName] = type;
     }
 
@@ -494,7 +501,7 @@ int Table::DropForeignReferedConstraint(std::string table_name) {
         if(dynamic_cast<const ForeignReferedConstraint *>(*it) != nullptr) {
             if(dynamic_cast<const ForeignReferedConstraint *>(*it)->GetReferenceTableName() == table_name) {
                 delete *it;
-                constraints.erase(it);
+                it = constraints.erase(it);
             }
             else it++;
         }
@@ -508,7 +515,7 @@ int Table::DropForeignReferedConstraint(std::string tableName, std::string field
         if(dynamic_cast<const ForeignReferedConstraint *>(*it) == nullptr) {
             if(dynamic_cast<const ForeignReferedConstraint *>(*it)->GetReferenceTableName() == tableName && dynamic_cast<const ForeignReferedConstraint *>(*it)->GetReferenceFieldName() == fieldName) {
                 delete *it;
-                constraints.erase(it);
+                it = constraints.erase(it);
             }
             else it++;
         }
@@ -526,7 +533,7 @@ int Table::DeleteConstraint(std::string constraintName, Database* db) {
                 //std::cout<<"deleting refered "<<dynamic_cast<const ForeignKeyConstraint *>(*it)->GetReferenceTableName()<<std::endl;
                 db->AlterTableDeleteConstraint(dynamic_cast<const ForeignKeyConstraint *>(*it)->GetReferenceTableName(), constraintName + "refered");
             }
-            constraints.erase(it);
+            it = constraints.erase(it);
             return sSuccess;
         }
         else it++;

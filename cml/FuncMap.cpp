@@ -546,9 +546,13 @@ void FuncMap::setup() {
         QString username = params[0].toString();
         QString db_name = params[1].toString();
         QString tb_name = params[2].toString();
-        QString power = params[3].toString();
+        QJsonArray power = params[3].toJsonArray();
 
-        int code = db.GrantAuthority(username.toStdString(),db_name.toStdString(),tb_name.toStdString(),power.toStdString());
+        int code;
+        for(const auto& n : power) {
+            code = db.GrantAuthority(username.toStdString(),db_name.toStdString(),tb_name.toStdString(),n.toString().toStdString());
+            if(code != sSuccess) break;
+        }
         QString func = "GrantAuthority";
         QJsonArray data;
         returnData = makeJsDocument(code,func,data);
@@ -575,9 +579,13 @@ void FuncMap::setup() {
         QString username = params[0].toString();
         QString db_name = params[1].toString();
         QString tb_name = params[2].toString();
-        QString power = params[3].toString();
+        QJsonArray power = params[3].toJsonArray();
 
-        int code = db.GrantAuthority(username.toStdString(),db_name.toStdString(),tb_name.toStdString(),power.toStdString());
+        int code;
+        for(const auto& n : power) {
+            code = db.RevokeAuthority(username.toStdString(),db_name.toStdString(),tb_name.toStdString(),n.toString().toStdString());
+            if(code != sSuccess) break;
+        }
         QString func = "RevokeAuthority";
         QJsonArray data;
         returnData = makeJsDocument(code,func,data);

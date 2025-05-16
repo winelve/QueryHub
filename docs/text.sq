@@ -1,4 +1,8 @@
 
+register xt 123456;
+
+login xt p 123456;
+
 create database xt;
 create database wyq;
 
@@ -85,7 +89,7 @@ update sc set (grade = 60) where (cno = 3 AND grade < 60);
 
 select (*) from sc;
 
-update student set (age = 20, address = jiangxi) where (sno = 23301082);
+update student set (age = 20, address = beijing) where (sno = 23301000);
 
 select (*) from student;
 
@@ -101,3 +105,72 @@ select (sno) from sc where (cno = 3);
 
 
 select (*) from student where (cno = 3 and address = beijing) join (sc) order by (sno);
+
+
+create index on student sno;
+
+create index on sc sno;
+
+select (cno, grade) from sc where (sno = 23301082);
+
+drop index on student sno;
+
+register root 123456;
+
+login root p 123456;
+
+use xt;
+
+drop student;
+
+show tables;
+
+drop sc;
+
+show tables;
+
+drop student;
+
+show tables;
+
+rollback;
+
+register wyq 234567;
+
+grant (*) on *.* to wyq;
+
+revoke (*) on xt.student from wyq;
+
+register cat 345678;
+
+grant (select) on xt.* to cat;
+grant (insert) on xt.* to cat;
+
+revoke (insert) on xt.* from cat;
+
+register x 123456;
+
+grant (create) on xt.* to x;
+grant (drop) on xt.* to x;
+revoke (drop) on xt.sc from x;
+
+use xt;
+
+login wyq p 234567;
+
+update sc set (grade = 99) where (sno = 23301000);
+
+update student set (age = 20, address = jiangxi) where (sno = 23301000);
+
+
+login cat p 345678;
+
+select (*) from sc;
+
+insert into student (sno, sname, age, address) values (23311111, no, 999, jiangxi);
+
+login x p 123456;
+
+
+create table teacher(tno string primary_key, tname string);
+drop table teacher;
