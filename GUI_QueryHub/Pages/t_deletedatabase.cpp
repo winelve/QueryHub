@@ -1,11 +1,11 @@
 #include "T_DeleteDataBase.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include "ElaComboBox.h"
+#include "ElaLineEdit.h"
 #include "ElaPushButton.h"
 #include "ElaText.h"
 #include "ElaMessageBar.h"
-#include <QDebug>
+#include <ElaWindow.h>
 
 T_DeleteDataBase::T_DeleteDataBase(QWidget* parent)
     : T_BasePage(parent)
@@ -25,36 +25,29 @@ void T_DeleteDataBase::setupUI()
     mainLayout->setContentsMargins(40, 40, 40, 40);
     mainLayout->setSpacing(30);
 
-    // 选择区域
-    QWidget* selectContainer = new QWidget(this);
-    QVBoxLayout* selectLayout = new QVBoxLayout(selectContainer);
-    selectLayout->setContentsMargins(0, 0, 0, 0);
-    selectLayout->setSpacing(20);
+    // 输入区域
+    QWidget* inputContainer = new QWidget(this);
+    QVBoxLayout* inputLayout = new QVBoxLayout(inputContainer);
+    inputLayout->setContentsMargins(0, 0, 0, 0);
+    inputLayout->setSpacing(15);
 
-    // 数据库选择
-    QWidget* dbSelectRow = new QWidget(selectContainer);
-    QHBoxLayout* dbLayout = new QHBoxLayout(dbSelectRow);
-    dbLayout->setContentsMargins(0, 0, 0, 0);
-    dbLayout->setSpacing(15);
+    // 输入提示
+    ElaText* inputLabel = new ElaText("数据库名称", inputContainer);
+    inputLabel->setTextStyle(ElaTextType::Subtitle);
 
-    ElaText* dbLabel = new ElaText("选择数据库:", dbSelectRow);
-    dbLabel->setTextStyle(ElaTextType::Subtitle);
-
-    m_dbComboBox = new ElaComboBox(dbSelectRow);
-    m_dbComboBox->setPlaceholderText("请选择要删除的数据库");
-    m_dbComboBox->setBorderRadius(8);
-    m_dbComboBox->setFixedHeight(36);
-
-    dbLayout->addWidget(dbLabel);
-    dbLayout->addWidget(m_dbComboBox);
-    dbLayout->addStretch();
+    // 输入框
+    m_dbNameEdit = new ElaLineEdit(inputContainer);
+    m_dbNameEdit->setPlaceholderText("请输入要删除的数据库名称...");
+    m_dbNameEdit->setFixedHeight(40);
+    m_dbNameEdit->setBorderRadius(8);
 
     // 警告文本
-    ElaText* warningText = new ElaText("警告：删除数据库将永久删除所有数据！", selectContainer);
+    ElaText* warningText = new ElaText("警告：删除数据库将永久删除所有数据！", inputContainer);
     warningText->setTextStyle(ElaTextType::Body);
 
-    selectLayout->addWidget(dbSelectRow);
-    selectLayout->addWidget(warningText);
+    inputLayout->addWidget(inputLabel);
+    inputLayout->addWidget(m_dbNameEdit);
+    inputLayout->addWidget(warningText);
 
     // 按钮区域
     QWidget* buttonContainer = new QWidget(this);
@@ -67,7 +60,7 @@ void T_DeleteDataBase::setupUI()
     m_cancelBtn->setFixedSize(100, 36);
     m_cancelBtn->setBorderRadius(8);
 
-    // 确认按钮（设置为危险样式）
+    // 确认按钮（危险样式）
     m_confirmBtn = new ElaPushButton("删除", buttonContainer);
     m_confirmBtn->setFixedSize(100, 36);
     m_confirmBtn->setBorderRadius(8);
@@ -83,7 +76,7 @@ void T_DeleteDataBase::setupUI()
     buttonLayout->addWidget(m_confirmBtn);
 
     // 添加到主布局
-    mainLayout->addWidget(selectContainer);
+    mainLayout->addWidget(inputContainer);
     mainLayout->addStretch();
     mainLayout->addWidget(buttonContainer);
 
@@ -94,26 +87,20 @@ void T_DeleteDataBase::setupUI()
     addCentralWidget(centralWidget, true, true, 0);
 }
 
-void T_DeleteDataBase::setDatabases(const QStringList& databases)
-{
-    m_dbComboBox->clear();
-    m_dbComboBox->addItems(databases);
-}
-
 void T_DeleteDataBase::onConfirmClicked()
 {
-    QString dbName = m_dbComboBox->currentText();
-    if(dbName.isEmpty()) {
-        ElaMessageBar::warning(ElaMessageBarType::Bottom, "警告", "请选择要删除的数据库!", 2500, this);
+    QString dbName = m_dbNameEdit->text().trimmed();
+    if (dbName.isEmpty()) {
+        ElaMessageBar::warning(ElaMessageBarType::Bottom, "警告", "数据库名称不能为空！", 2500, this);
         return;
     }
-
-    emit databaseDeleted(dbName);
+    QString sql = "DROP DATABASE " + dbName + ";";
+    emit databaseDeleted(sql);
 }
 
 void T_DeleteDataBase::onCancelClicked()
 {
-    this->close();
+
 }
 
 T_DeleteDataBase::~T_DeleteDataBase()

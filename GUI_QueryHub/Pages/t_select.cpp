@@ -113,6 +113,13 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent* event) {
         ++blockNumber;
     }
 }
+QString CodeEditor::getSelectedText() const {
+    QTextCursor cursor = textCursor();
+    if (cursor.hasSelection()) {
+        return cursor.selectedText().replace(QChar::ParagraphSeparator, '\n'); // 处理段落分隔符
+    }
+    return QString(); // 没有选中文本返回空字符串
+}
 
 // 查询界面实现
 T_Select::T_Select(QWidget* parent)
@@ -146,7 +153,11 @@ T_Select::~T_Select()
 
 QString T_Select::getQueryText() const
 {
-    return _queryEdit->toPlainText();
+    QString selectedText = _queryEdit->getSelectedText();
+    if (!selectedText.isEmpty()) {
+        return selectedText; // 优先返回选中文本
+    }
+    return _queryEdit->toPlainText(); // 无选中文本时返回全部文本
 }
 
 void T_Select::resetResults()

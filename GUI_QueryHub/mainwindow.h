@@ -38,6 +38,9 @@ class MainWindow : public ElaWindow
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
+    // QMap<QString, Client*> getclients_map_(){
+    //     return clients_map_;
+    // }
 
 private:
     void initWindow();
@@ -48,11 +51,14 @@ private:
     void init_treeview(const QString& parentKey);
     void refreshConnectionTree(const QString& nodeKey);
     void onlinkNodeClicked(QString nodeKey);
+    void manage_function_();
 
 
 private slots:
     void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
     void refreshAllConnections();
+    //DDL监听
+    void handleSQL_function(const QString& sql);
 
 private:
     T_About* _aboutPage{nullptr};
