@@ -55,7 +55,6 @@ int DataProcessor::CreateUser(const std::string& userName,const std::string& use
             }
         }
 
-        return sCurrentUserError;
     }
 
     return sSuccess;
@@ -128,7 +127,7 @@ int DataProcessor::CreateDatabase(std::string databaseName){
     //to do
     databases.push_back(Database(databaseName, currentUserName));
 
-    GrantAuthority(currentUserName, databaseName, "*", "all");
+    GrantAuthority(currentUserName, databaseName, "*", "*");
 
     return sSuccess;
 }
@@ -917,7 +916,7 @@ int DataProcessor::GrantDatabaseOwner(const std::string& databaseName,const std:
         }
     }
 
-    GrantAuthority(userName, databaseName, "*", "all");
+    GrantAuthority(userName, databaseName, "*", "*");
 
     return sSuccess;
 }

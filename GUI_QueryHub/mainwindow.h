@@ -17,6 +17,8 @@
 #include "Pages/t_setting.h"
 #include "Pages/t_tableview.h"
 #include "Pages/t_select.h"
+#include <QJsonObject>
+#include <QJsonArray>
 
 class T_About;
 class T_Setting;
@@ -53,6 +55,28 @@ private:
 private slots:
     void onNavigationNodeClicked(ElaNavigationType::NavigationNodeType nodeType, QString nodeKey);
     void refreshAllConnections();
+
+    int create_db(const QString& dbName) {
+        QJsonArray response = clients_map_.first()->handle_sql(QString("create database %1;").arg(dbName));
+        int code = response[0].toObject()["code"].toInt();
+        return code;
+    }
+
+    int create_tb(const QString& dbName,
+                  const QString& tableName,
+                  const QList<TableProperty>& properties)
+    {
+        // clients_map_.first()->handle_sql(QString("use %1;").arg(dbName));
+        QJsonArray response = clients_map_.first()->handle_sql(QString("create table %1 (%2 string);").arg(dbName,properties[0].name));
+        int code = response[0].toObject()["code"].toInt();
+        return code;
+    }
+
+    // int add_column(const QString& dbName, const QString& tableName,
+    //                const QList<QPair<QString, QString>>& fields);
+
+    // int drop_db(const QString& dbName);
+    // int drop_tb(const QString& dbName, const QString& tableName);
 
 private:
     T_About* _aboutPage{nullptr};

@@ -101,6 +101,13 @@ void MainWindow::initContent()
     addFooterNode("About", nullptr, _aboutKey, 0, ElaIconType::User);
     _aboutPage->hide();
 
+
+    connect(_addDataBasePage,&T_AddDataBase::databaseCreated, this, &MainWindow::create_db);
+    connect(_addTablePage,&T_AddTable::tableCreated, this, &MainWindow::create_tb);
+    // connect(_addFieldsPage,&T_AddFields::fieldsAdded, this, &MainWindow::add_column);
+    // connect(_delDataBasePage,&T_DeleteDataBase::databaseDeleted,this,&MainWindow::drop_db);
+    // connect(_delTablePage,&T_DeleteTable::tableDeleted,this,&MainWindow::drop_tb);
+
     connect(this, &ElaWindow::navigationNodeClicked, this, [=](ElaNavigationType::NavigationNodeType nodeType, QString nodeKey) {
         qDebug() << "Navigation node clicked, type:" << nodeType << ", key:" << nodeKey;
         if (_aboutKey == nodeKey) {
